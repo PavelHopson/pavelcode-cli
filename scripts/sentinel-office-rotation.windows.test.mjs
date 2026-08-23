@@ -7,9 +7,8 @@ import {
   credentialDeleteConfirmation,
 } from '../office/windows-office-credential-store.mjs'
 
-test('Windows Credential Manager stages an isolated dual-key rotation', {
+if (process.platform === 'win32' && process.env.SENTINEL_WINDOWS_CREDENTIAL_E2E === '1') test('Windows Credential Manager stages an isolated dual-key rotation', {
   timeout: 30_000,
-  skip: process.platform !== 'win32' || process.env.SENTINEL_WINDOWS_CREDENTIAL_E2E !== '1',
 }, async () => {
   const store = createWindowsOfficeCredentialStore()
   const producerId = 'eclipse-hopson-sentinel-rotation-test'

@@ -6,8 +6,7 @@ import {
   credentialDeleteConfirmation,
 } from '../office/windows-office-credential-store.mjs'
 
-test('Windows Credential Manager stores and removes an isolated Office test secret', {
-  skip: process.platform !== 'win32' ? 'Windows Credential Manager is Windows-only' : false,
+if (process.platform === 'win32') test('Windows Credential Manager stores and removes an isolated Office test secret', {
   timeout: 30_000,
 }, async () => {
   const store = createWindowsOfficeCredentialStore({ timeoutMs: 20_000 })
@@ -33,8 +32,7 @@ test('Windows Credential Manager stores and removes an isolated Office test secr
   assert.equal((await store.status(identity)).provisioned, false)
 })
 
-test('concurrent provision keeps exactly one producer secret', {
-  skip: process.platform !== 'win32' ? 'Windows Credential Manager is Windows-only' : false,
+if (process.platform === 'win32') test('concurrent provision keeps exactly one producer secret', {
   timeout: 30_000,
 }, async () => {
   const store = createWindowsOfficeCredentialStore({ timeoutMs: 20_000 })
