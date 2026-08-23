@@ -72,8 +72,8 @@ body {
 .receipt { margin-top: 8px; border-color: rgba(74,230,160,.2); }.receipt pre { white-space: pre-wrap; color: #B0BEC9; font-size: 11px; }.receipt small { color: #6B7A8A; }
 .command-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }.command-actions p { color: #6B7A8A; font-size: 10px; }.primary-action { min-height: 42px; padding: 0 17px; border: 1px solid rgba(107,163,255,.25); border-radius: 9px; background: rgba(107,163,255,.11); color: #F0F4F8; font-size: 11px; font-weight: 650; cursor: pointer; }.primary-action:disabled { opacity: .42; cursor: not-allowed; }
 @media (max-width: 900px) { .voice-room { padding: 14px; }.voice-room__header { flex-direction: column; }.kill-switch { width: 100%; }.voice-hud { grid-template-columns: 1fr 1fr; }.voice-room__grid { grid-template-columns: 1fr; }.plan-diff { grid-template-columns: 1fr; } }
-@media (max-width: 520px) { .voice-hud { grid-template-columns: 1fr; }.flow-steps { grid-template-columns: 1fr 1fr; }.command-actions { align-items: stretch; flex-direction: column; }.primary-action { width: 100%; }.surface-switcher { display: none; } }
-@media (prefers-reduced-motion: reduce) { .voice-room *, .voice-room *::before, .voice-room *::after { animation: none !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+@media (max-width: 520px) { .voice-hud { grid-template-columns: 1fr; }.flow-steps { grid-template-columns: 1fr 1fr; }.command-actions { align-items: stretch; flex-direction: column; }.primary-action { width: 100%; }.sentinel-header { padding-inline: 10px; }.sentinel-header__left { flex: 1; justify-content: space-between; }.sentinel-header__title, .sentinel-header__status { display: none; }.surface-switcher { display: flex; }.surface-switcher button { min-height: 34px; } }
+@media (prefers-reduced-motion: reduce) { .sentinel-shell *, .sentinel-shell *::before, .sentinel-shell *::after { animation: none !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
 
 /* Visual profile: quiet operational console. */
 .sentinel-shell[data-visual-profile="operational"] {
@@ -94,3 +94,22 @@ body {
 .sentinel-shell[data-visual-profile="operational"] button { transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease; }
 .sentinel-shell[data-visual-profile="operational"] .skill-panel,
 .sentinel-shell[data-visual-profile="operational"] .command-flow { box-shadow: 0 18px 48px -44px rgba(107,163,255,.55); }
+.kill-switch:disabled { cursor: not-allowed; opacity: .72; }
+.command-field > small { color: #6B7A8A; font-size: 10px; text-align: right; }
+.execution-state { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 12px 13px; border: 1px solid rgba(107,163,255,.22); border-radius: 10px; background: rgba(107,163,255,.06); color: #6BA3FF; }
+.execution-state > svg { flex: 0 0 auto; animation: sentinel-spin 1s linear infinite; }
+.execution-state > div { display: grid; gap: 3px; min-width: 0; }
+.execution-state strong { color: #F0F4F8; font-size: 11px; }
+.execution-state span { color: #6B7A8A; font-size: 10px; overflow-wrap: anywhere; }
+.execution-state.is-error { border-color: rgba(248,113,113,.28); background: rgba(248,113,113,.07); color: #f87171; }
+.execution-state.is-error > svg { animation: none; }
+.receipt__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.receipt__heading > div { min-width: 0; }
+.receipt__heading strong { display: block; color: #F0F4F8; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.receipt__heading > span { flex: 0 0 auto; padding: 3px 6px; border: 1px solid #1A2230; border-radius: 5px; color: #6B7A8A; font: 9px monospace; }
+.receipt pre { overflow-x: auto; }
+.receipt__actions { display: flex; gap: 7px; margin-top: 12px; }
+.receipt__actions button { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid #1A2230; border-radius: 7px; background: #0B0F14; color: #B0BEC9; font-size: 10px; cursor: pointer; }
+.receipt__actions button:disabled { opacity: .42; cursor: not-allowed; }
+@keyframes sentinel-spin { to { transform: rotate(360deg); } }
+@media (max-width: 520px) { .receipt__heading { flex-direction: column; }.receipt__actions { align-items: stretch; flex-direction: column; }.receipt__actions button { justify-content: center; } }

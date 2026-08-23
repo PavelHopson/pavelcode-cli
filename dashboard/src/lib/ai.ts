@@ -20,6 +20,24 @@ export const MODELS = [
 
 const OLLAMA_URL = 'http://localhost:11434/v1/chat/completions';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function streamContent(payload: unknown): string | null {
+  if (!isRecord(payload) || !Array.isArray(payload.choices)) return null;
+  const first = payload.choices[0];
+  if (!isRecord(first) || !isRecord(first.delta)) return null;
+  return typeof first.delta.content === 'string' ? first.delta.content : null;
+}
+
+function providerModelNames(payload: unknown): string[] {
+  if (!isRecord(payload) || !Array.isArray(payload.models)) return [];
+  return payload.models.flatMap((entry) => (
+    isRecord(entry) && typeof entry.name === 'string' ? [entry.name] : []
+  ));
+}
+
 export function getSelectedModel(): string {
   const saved = localStorage.getItem('sentinel-model');
   if (saved && MODELS.some(m => m.id === saved)) return saved;
@@ -76,8 +94,8 @@ export async function sendMessage(
   });
 
   if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error(`Ollama error ${resp.status}: ${err}`);
+    void resp.body?.cancel();
+    throw new Error(`Ollama request failed (${resp.status})`);
   }
 
   const reader = resp.body?.getReader();
@@ -99,10 +117,12 @@ export async function sendMessage(
       const data = line.slice(6).trim();
       if (data === '[DONE]') return;
       try {
-        const json = JSON.parse(data);
-        const delta = json.choices?.[0]?.delta?.content;
+        const json: unknown = JSON.parse(data);
+        const delta = streamContent(json);
         if (delta) onChunk(delta);
-      } catch {}
+      } catch {
+        continue;
+      }
     }
   }
 }
@@ -114,8 +134,11 @@ export async function checkProviderStatus(model?: string): Promise<{
   const start = performance.now();
   try {
     const resp = await fetch('http://localhost:11434/api/tags');
-    const data = await resp.json();
-    const models = data.models?.map((x: any) => x.name) || [];
+    if (!resp.ok) {
+      return { provider: 'Ollama (локально)', model: m, healthy: false, latency: Math.round(performance.now() - start) };
+    }
+    const data: unknown = await resp.json();
+    const models = providerModelNames(data);
     const hasModel = models.some((n: string) => n.startsWith(m.split(':')[0]));
     return {
       provider: 'Ollama (локально)',

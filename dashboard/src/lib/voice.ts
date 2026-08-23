@@ -1,5 +1,36 @@
 // Web Speech API — STT + TTS
 
+interface SpeechRecognitionAlternativeLike {
+  transcript: string;
+}
+
+interface SpeechRecognitionResultLike {
+  [index: number]: SpeechRecognitionAlternativeLike;
+}
+
+interface SpeechRecognitionEventLike {
+  results: { [index: number]: SpeechRecognitionResultLike };
+}
+
+export interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+type SpeechRecognitionWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
 export function isSpeechSupported(): boolean {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 }
@@ -12,8 +43,9 @@ export function createRecognition(
   onResult: (text: string) => void,
   onEnd: () => void,
   lang: string = 'ru-RU',
-): any | null {
-  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+): SpeechRecognitionLike | null {
+  const speechWindow = window as SpeechRecognitionWindow;
+  const SR = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
   if (!SR) return null;
 
   const recognition = new SR();
@@ -22,7 +54,7 @@ export function createRecognition(
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
 
-  recognition.onresult = (event: any) => {
+  recognition.onresult = (event: SpeechRecognitionEventLike) => {
     const text = event.results[0][0].transcript;
     onResult(text);
   };
@@ -41,7 +73,7 @@ export function speak(text: string, lang: string = 'ru-RU'): Promise<void> {
     const clean = text
       .replace(/```[\s\S]*?```/g, 'блок кода')
       .replace(/`[^`]+`/g, '')
-      .replace(/[#*_~>\[\]()]/g, '')
+      .replace(/(?:[#*_~>()]|\[|\])/g, '')
       .replace(/\n{2,}/g, '. ')
       .replace(/\n/g, ' ')
       .trim();

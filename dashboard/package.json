@@ -24,6 +24,16 @@
       "dist/**/*",
       "electron/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "../office",
+        "to": "office",
+        "filter": [
+          "*.mjs",
+          "*.ps1"
+        ]
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "public/favicon.svg"
@@ -53,15 +63,14 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "electron": "^41.2.0",
-    "electron-builder": "^26.8.1",
-    "electron-packager": "^17.1.2",
+    "electron": "^41.10.3",
+    "electron-builder": "^26.15.0",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.0",
-    "vite": "^8.0.4"
+    "vite": "^8.2.2"
   }
 }

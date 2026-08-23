@@ -2,6 +2,41 @@
 
 This document records blocked checks, failed attempts, and known limitations during the build-out of `Eclipse Hopson Sentinel`.
 
+## 2026-08-23
+
+### Dependency and release-surface verification
+
+- Upgraded the desktop release surface to Electron 41.10.3, electron-builder 26.15.0 and Vite 8.2.2; removed the unused deprecated `electron-packager` dependency.
+- Verified the dashboard production build and root Sentinel build, plus the supported-contract typecheck and 65 focused Office/operator/security tests.
+- Verified zero dashboard npm advisories and zero production Bun advisories after the dependency refresh.
+- Split the 506.12 KiB dashboard JavaScript bundle by existing Chat and Voice surfaces; the largest emitted chunks are now 282.76 KiB and 211.98 KiB, with no Vite chunk warning.
+
+### Sentinel → Eclipse Chat Office Core P1d
+
+- Added a minimized Office lifecycle projection and bounded in-memory outbox after the authoritative
+  Safe Operator result; projection or transport failures cannot change the local receipt.
+- Added the canonical `office.event.v1` mapper and a separate HMAC-signed atomic HTTP ingest client.
+- The client enforces an exact origin allowlist, 64 KiB/50-event limits, timeout, at most three
+  attempts, exact workspace matching and strict persisted-response validation without error-body logging.
+- Added a typed Windows Credential Manager boundary and prompt-only CLI for provision/read/status/confirmed delete. Secrets stay out of argv, receipts, logs, renderer IPC and Git; concurrent provision is serialized by a scoped mutex and cannot overwrite an existing credential.
+- Added a staged dual-key credential rotation contract and CLI: the next key uses hidden input, the current key is preserved, secret reuse and case-insensitive key collisions fail closed, postconditions are rechecked, and retirement remains a separate confirmed delete. A live Windows Credential Manager test staged two isolated random QA keys and removed both in `finally`.
+- Ran a real Sentinel-to-Eclipse-Chat E2E against a temporary local PostgreSQL 18 cluster: after the first committed 2xx was deliberately lost, PostgreSQL restarted and the exact signed retry returned the original 200 with one event and one nonce row; the same nonce with a changed body returned 409.
+- Windows harness bring-up initially exposed `--pwfile=-`, inherited `pg_ctl` pipes and shell-free `.cmd` spawn incompatibilities; the final harness uses an immediately zeroed/deleted temporary pwfile, exit-based pipe cleanup and the installed Prisma JS CLI.
+- The E2E applied the real Prisma migration chain, used only generated test credentials and loopback HTTP, then left zero QA directories and zero QA PostgreSQL processes.
+- Composed the Credential Manager client, canonical adapter and lifecycle into an explicit opt-in Electron main-process runtime. Invalid origin/key/workspace configuration, missing credentials and secret-like Office environment variables disable publication with bounded diagnostics and no renderer capability.
+- Corrected lifecycle delivery accounting for the canonical adapter's `{ accepted: true }` result and covered the real signed publish path with an in-memory Office Core response.
+- Chromium QA passed at 1440x900 and 390x844 with keyboard focus, visible mobile surface navigation, zero reduced-motion animations, zero horizontal overflow and zero console, page or request errors. Malformed provider-list entries and malformed SSE frames were ignored while the valid streamed response completed.
+- No production credential or network endpoint was configured. Production provisioning and rotation remain an operations task.
+
+### First real bounded operator path
+
+- Added a shared deterministic safe-operator contract for Electron and the standalone CLI.
+- Replaced the dashboard's simulated execution path with trusted, invoke-only Electron IPC; the browser fallback is labelled preview-only.
+- Added exact-key validation, a fixed read-only skill allowlist, approval and plan expiry, replay protection, rate limiting, bounded receipts and a STOP-by-default one-shot control.
+- Kept LLMs, arbitrary shell input, network access, file writes and secrets outside the authority path.
+- Hardened Electron navigation/external-link handling and added a restrictive dashboard CSP.
+- Added focused security and contract regression tests; the repository-wide dashboard ESLint run now passes.
+
 ## 2026-08-13
 
 ### CI truthfulness and TypeScript containment

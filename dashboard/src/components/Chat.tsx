@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Square, Mic, MicOff } from 'lucide-react';
 import { sendMessage, type Message, getSelectedModel, MODELS } from '../lib/ai';
-import { createRecognition, isSpeechSupported, speak, stopSpeaking } from '../lib/voice';
+import { createRecognition, isSpeechSupported, speak, stopSpeaking, type SpeechRecognitionLike } from '../lib/voice';
 import { MessageBubble } from './MessageBubble';
 import { VoiceWave } from './VoiceWave';
 import { Tooltip } from './Tooltip';
@@ -19,7 +19,7 @@ export function Chat({ messages, onMessagesChange, showGuide, autoSpeak }: ChatP
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const currentModel = MODELS.find(m => m.id === getSelectedModel());
@@ -56,9 +56,11 @@ export function Chat({ messages, onMessagesChange, showGuide, autoSpeak }: ChatP
         await speak(assistantMsg.content);
         setSpeaking(false);
       }
-    } catch (e: any) {
-      if (e.name !== 'AbortError') {
-        assistantMsg.content += `\n\n⚠️ ${e.message}`;
+    } catch (error: unknown) {
+      const errorName = error instanceof Error ? error.name : '';
+      if (errorName !== 'AbortError') {
+        const message = error instanceof Error ? error.message : 'Не удалось получить ответ.';
+        assistantMsg.content += `\n\n⚠️ ${message}`;
         onMessagesChange([...newMessages, { ...assistantMsg }]);
       }
     } finally {

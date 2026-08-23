@@ -1,0 +1,198 @@
+#!/usr/bin/env node
+
+import { spawn } from 'node:child_process'
+import { dirname, resolve } from 'node:path'
+import { createInterface } from 'node:readline/promises'
+import { stdin as input, stdout as output } from 'node:process'
+import { fileURLToPath } from 'node:url'
+import {
+  buildSafeOperatorPlan,
+  createSafeOperatorExecutor,
+  createSafeOperatorRequest,
+  listSafeOperatorSkills,
+  SafeOperatorError,
+} from '../dashboard/electron/sentinel-safe-operator.mjs'
+
+function parseArgs(argv) {
+  const config = {
+    speak: process.env.SENTINEL_VOICE_SPEAK === '1',
+    voice: process.env.SENTINEL_TTS_VOICE || '',
+    rate: Number(process.env.SENTINEL_TTS_RATE || '0'),
+    stt: process.env.SENTINEL_VOICE_STT === '1',
+    pushToTalk: process.env.SENTINEL_VOICE_PTT === '1',
+    sttTimeoutSeconds: Number(process.env.SENTINEL_STT_TIMEOUT || '8'),
+  }
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const part = argv[index]
+    const next = argv[index + 1]
+    if (part === '--speak') config.speak = true
+    if (part === '--stt') config.stt = true
+    if (part === '--ptt') config.pushToTalk = true
+    if (part === '--voice' && next) {
+      config.voice = next
+      index += 1
+    }
+    if (part === '--rate' && next) {
+      const rate = Number(next)
+      if (Number.isFinite(rate) && rate >= -10 && rate <= 10) config.rate = rate
+      index += 1
+    }
+    if (part === '--stt-timeout' && next) {
+      const timeout = Number(next)
+      if (Number.isFinite(timeout) && timeout >= 2 && timeout <= 30) config.sttTimeoutSeconds = timeout
+      index += 1
+    }
+  }
+  return config
+}
+
+function repoScript(name) {
+  const currentDir = dirname(fileURLToPath(import.meta.url))
+  return resolve(currentDir, '..', 'scripts', name)
+}
+
+function powerShellPath() {
+  return resolve(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+}
+
+async function runPowerShellScript(script, args, capture = false) {
+  return await new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(
+      powerShellPath(),
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, ...args],
+      {
+        windowsHide: true,
+        stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'ignore',
+      },
+    )
+    let stdout = ''
+    let stderr = ''
+    if (capture) {
+      child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
+      child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
+    }
+    child.on('error', rejectPromise)
+    child.on('close', (code) => {
+      if (code === 0) resolvePromise({ stdout: stdout.trim(), stderr: stderr.trim() })
+      else rejectPromise(new Error(stderr.trim() || `Local voice process exited with code ${code}`))
+    })
+  })
+}
+
+async function listenOnce(config) {
+  const result = await runPowerShellScript(
+    repoScript('sentinel-stt.ps1'),
+    ['-TimeoutSeconds', String(config.sttTimeoutSeconds)],
+    true,
+  )
+  if (!result.stdout) throw new Error('Speech recognition returned no result')
+  const payload = JSON.parse(result.stdout)
+  if (!payload?.ok || typeof payload.text !== 'string' || !payload.text.trim()) {
+    throw new Error(String(payload?.error || 'Speech recognition failed'))
+  }
+  return payload.text.trim()
+}
+
+async function speakReceipt(config, text) {
+  if (!config.speak || !text.trim()) return
+  const args = ['-Text', text.slice(0, 500), '-Rate', String(config.rate)]
+  if (config.voice) args.push('-Voice', config.voice)
+  await runPowerShellScript(repoScript('sentinel-tts.ps1'), args)
+}
+
+function printPlan(plan) {
+  output.write(`\nПлан · ${plan.label}\n`)
+  plan.steps.forEach((step, index) => output.write(`  ${index + 1}. ${step}\n`))
+  output.write('Diff до запуска\n')
+  plan.diff.forEach((line) => output.write(`  - ${line}\n`))
+}
+
+function printReceipt(receipt) {
+  output.write('\nReceipt · выполнено локально\n')
+  receipt.lines.forEach((line) => output.write(`${line}\n`))
+  output.write(`Boundary: ${receipt.boundaries.join(' · ')}\n`)
+  output.write('STOP снова включён.\n\n')
+}
+
+async function readPrompt(config, rl) {
+  let prompt = (await rl.question('sentinel-operator> ')).trim()
+  if (!prompt && config.pushToTalk) {
+    if (!config.stt) {
+      output.write('[voice] Для PTT перезапустите с --stt --ptt.\n')
+      return ''
+    }
+    output.write(`[voice] Слушаю до ${config.sttTimeoutSeconds} секунд...\n`)
+    prompt = await listenOnce(config)
+    output.write(`[voice] Распознано: ${prompt}\n`)
+  }
+  if (prompt.toLowerCase() === '/listen') {
+    if (!config.stt) {
+      output.write('[voice] STT выключен. Перезапустите с --stt.\n')
+      return ''
+    }
+    output.write(`[voice] Слушаю до ${config.sttTimeoutSeconds} секунд...\n`)
+    prompt = await listenOnce(config)
+    output.write(`[voice] Распознано: ${prompt}\n`)
+  }
+  return prompt
+}
+
+async function main() {
+  const config = parseArgs(process.argv.slice(2))
+  const executor = createSafeOperatorExecutor({ transport: 'sentinel-voice-cli' })
+  const rl = createInterface({ input, output })
+
+  output.write('Eclipse Hopson Sentinel · Safe Operator\n')
+  output.write('Режим: read-only · STOP включён · shell/network/write запрещены\n')
+  output.write(`STT: ${config.stt ? 'готов' : 'выключен'} · PTT: ${config.pushToTalk ? 'готов' : 'выключен'} · TTS: ${config.speak ? 'готов' : 'выключен'}\n`)
+  output.write('Примеры: «покажи статус системы», «покажи навыки», «предпросмотр памяти». exit — выход.\n\n')
+
+  try {
+    while (true) {
+      let prompt
+      try {
+        prompt = await readPrompt(config, rl)
+      } catch (error) {
+        output.write(`[voice error] ${error instanceof Error ? error.message : 'Speech recognition failed'}\n\n`)
+        continue
+      }
+      if (!prompt) continue
+      if (prompt.toLowerCase() === 'exit') break
+      if (prompt.toLowerCase() === '/skills') {
+        listSafeOperatorSkills().forEach((skill) => output.write(`${skill.id}: ${skill.description}\n`))
+        output.write('\n')
+        continue
+      }
+
+      const plan = buildSafeOperatorPlan(prompt)
+      if (!plan) {
+        output.write('Команда не входит в read-only allowlist. Используйте /skills.\n\n')
+        continue
+      }
+      printPlan(plan)
+      const confirmation = (await rl.question('Выполнить один read-only handler? Введите ДА: ')).trim().toLocaleLowerCase('ru-RU')
+      if (confirmation !== 'да' && confirmation !== 'yes') {
+        output.write('Отменено. STOP остаётся включён.\n\n')
+        continue
+      }
+
+      try {
+        const receipt = executor.execute(createSafeOperatorRequest(plan))
+        printReceipt(receipt)
+        await speakReceipt(config, receipt.speech)
+      } catch (error) {
+        const code = error instanceof SafeOperatorError ? error.code : 'OPERATOR_FAILED'
+        const message = error instanceof Error ? error.message : 'Safe operator failed'
+        output.write(`[${code}] ${message}\nSTOP включён.\n\n`)
+      }
+    }
+  } finally {
+    rl.close()
+  }
+}
+
+main().catch((error) => {
+  output.write(`Fatal error: ${error instanceof Error ? error.message : 'Unknown error'}\n`)
+  process.exitCode = 1
+})

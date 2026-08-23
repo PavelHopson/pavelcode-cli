@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eclipse-forge.local/contracts/eclipse-chat-office-event-v1.schema.json",
+  "title": "Eclipse Chat Office Event v1",
+  "description": "Canonical Office Core event persisted after validating a Sentinel OfficeEventInput. id, sequence, and occurredAt are assigned by Office Core; cursor belongs to the GET response, not to this event.",
+  "$ref": "#/$defs/officeEvent",
+  "$defs": {
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "task.created",
+        "task.started",
+        "task.progressed",
+        "task.cancelled",
+        "task.completed",
+        "task.failed",
+        "approval.requested",
+        "approval.resolved",
+        "agent.state.changed",
+        "deliverable.ready"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["task", "run", "approval", "agent", "deliverable"]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    },
+    "metadataValue": {
+      "anyOf": [
+        { "type": "string", "maxLength": 240 },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" }
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "maxProperties": 20,
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "additionalProperties": { "$ref": "#/$defs/metadataValue" }
+    },
+    "officeEventInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceId", "type", "subject", "summary", "metadata"],
+      "properties": {
+        "workspaceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "type": { "$ref": "#/$defs/eventType" },
+        "subject": { "$ref": "#/$defs/subject" },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "officeEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workspaceId",
+        "type",
+        "subject",
+        "summary",
+        "metadata",
+        "schemaVersion",
+        "id",
+        "sequence",
+        "occurredAt"
+      ],
+      "properties": {
+        "workspaceId": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "type": { "$ref": "#/$defs/eventType" },
+        "subject": { "$ref": "#/$defs/subject" },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 320 },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "schemaVersion": { "const": "office.event.v1" },
+        "id": { "type": "string", "format": "uuid" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "occurredAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

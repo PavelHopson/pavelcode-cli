@@ -7,12 +7,16 @@
   "bin": {
     "sentinel": "./bin/sentinel",
     "sentinel-voice": "./bin/sentinel-voice",
+    "sentinel-operator": "./bin/sentinel-operator",
+    "sentinel-office-credentials": "./bin/sentinel-office-credentials",
     "pavelcode": "./bin/pavelcode"
   },
   "files": [
     "bin/",
     "dist/cli.mjs",
     "scripts/spec-gate-verify.mjs",
+    "dashboard/electron/sentinel-safe-operator.mjs",
+    "office/",
     "README.md"
   ],
   "scripts": {

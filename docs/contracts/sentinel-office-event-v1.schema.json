@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eclipseforge.dev/schemas/office/sentinel-office-event-v1.schema.json",
+  "title": "Eclipse Forge Sentinel Internal Office Projection Event v1",
+  "description": "Internal Sentinel projection envelope. It is not the Eclipse Chat office.event.v1 wire contract; adapt it through eclipse-chat-office-adapter.mjs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "eventId",
+    "streamId",
+    "sequence",
+    "type",
+    "source",
+    "subject",
+    "time",
+    "correlationId",
+    "audience",
+    "data"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "eclipse.office.event.v1" },
+    "eventId": { "type": "string", "format": "uuid" },
+    "streamId": { "type": "string", "format": "uuid" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "type": {
+      "enum": [
+        "sentinel.presence.snapshot.v1",
+        "sentinel.operator.plan-projected.v1",
+        "sentinel.operator.execution-projected.v1",
+        "sentinel.operator.receipt-projected.v1",
+        "sentinel.operator.blocked.v1",
+        "sentinel.safety.boundary.v1"
+      ]
+    },
+    "source": { "const": "eclipse-hopson-sentinel" },
+    "subject": { "const": "agent:sentinel" },
+    "time": { "type": "string", "format": "date-time" },
+    "correlationId": {
+      "oneOf": [
+        { "type": "string", "format": "uuid" },
+        { "type": "null" }
+      ]
+    },
+    "audience": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "eclipse-chat.office-core" },
+        { "const": "eclipse-chat.presence-2d" },
+        { "const": "eclipse-chat.presence-3d" }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "data": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "sentinel.presence.snapshot.v1" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/presence" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "sentinel.operator.plan-projected.v1" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/plan" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "sentinel.operator.execution-projected.v1" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/execution" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "sentinel.operator.receipt-projected.v1" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/receipt" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "sentinel.operator.blocked.v1" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/blocked" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "sentinel.safety.boundary.v1" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/safety" } } }
+    }
+  ],
+  "$defs": {
+    "skillId": {
+      "enum": ["workspace.status", "memory.preview", "skills.status"]
+    },
+    "nullablePlanId": {
+      "oneOf": [
+        { "type": "string", "format": "uuid" },
+        { "type": "null" }
+      ]
+    },
+    "nullableSkillId": {
+      "oneOf": [
+        { "$ref": "#/$defs/skillId" },
+        { "type": "null" }
+      ]
+    },
+    "boundaries": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 8,
+      "items": {
+        "enum": [
+          "read-only",
+          "no-shell",
+          "no-network",
+          "no-filesystem-write",
+          "no-secrets",
+          "one-shot",
+          "preview-only"
+        ]
+      }
+    },
+    "presence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "availability", "attention", "activePlanId", "activeSkillId"],
+      "properties": {
+        "mode": {
+          "enum": ["idle", "planning", "awaiting-approval", "executing", "speaking", "blocked", "offline"]
+        },
+        "availability": { "enum": ["available", "busy", "unavailable"] },
+        "attention": { "enum": ["none", "approval", "blocked"] },
+        "activePlanId": { "$ref": "#/$defs/nullablePlanId" },
+        "activeSkillId": { "$ref": "#/$defs/nullableSkillId" }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "planId", "skillId", "effect", "requiresApproval", "killSwitch", "createdAt"],
+      "properties": {
+        "phase": { "const": "awaiting-approval" },
+        "planId": { "type": "string", "format": "uuid" },
+        "skillId": { "$ref": "#/$defs/skillId" },
+        "effect": { "const": "read-only" },
+        "requiresApproval": { "const": true },
+        "killSwitch": { "const": "engaged" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "requestId", "planId", "skillId", "effect", "acceptedAt"],
+      "properties": {
+        "phase": { "const": "executing" },
+        "requestId": { "type": "string", "format": "uuid" },
+        "planId": { "type": "string", "format": "uuid" },
+        "skillId": { "$ref": "#/$defs/skillId" },
+        "effect": { "const": "read-only" },
+        "acceptedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "receiptId",
+        "requestId",
+        "planId",
+        "skillId",
+        "status",
+        "effect",
+        "transport",
+        "boundaries",
+        "startedAt",
+        "completedAt"
+      ],
+      "properties": {
+        "phase": { "const": "completed" },
+        "receiptId": { "type": "string", "format": "uuid" },
+        "requestId": { "type": "string", "format": "uuid" },
+        "planId": { "type": "string", "format": "uuid" },
+        "skillId": { "$ref": "#/$defs/skillId" },
+        "status": { "const": "succeeded" },
+        "effect": { "const": "read-only" },
+        "transport": { "enum": ["electron-ipc", "browser-preview", "sentinel-voice-cli"] },
+        "boundaries": { "$ref": "#/$defs/boundaries" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "blocked": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "planId", "skillId", "reason", "blockedAt"],
+      "properties": {
+        "phase": { "const": "blocked" },
+        "planId": { "$ref": "#/$defs/nullablePlanId" },
+        "skillId": { "$ref": "#/$defs/nullableSkillId" },
+        "reason": {
+          "enum": ["approval-required", "stale-request", "policy-blocked", "rate-limited", "internal"]
+        },
+        "blockedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "projectionCanApprove", "projectionCanExecute", "allowedEffect", "blockedEffects"],
+      "properties": {
+        "authority": { "const": "eclipse-hopson-sentinel" },
+        "projectionCanApprove": { "const": false },
+        "projectionCanExecute": { "const": false },
+        "allowedEffect": { "const": "read-only" },
+        "blockedEffects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["shell", "write", "network", "install", "deploy", "secrets"] }
+        }
+      }
+    }
+  }
+}

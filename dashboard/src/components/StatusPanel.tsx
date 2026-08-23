@@ -9,7 +9,7 @@ interface StatusPanelProps {
 
 export function StatusPanel({ showGuide }: StatusPanelProps) {
   const [status, setStatus] = useState<{ provider: string; model: string; healthy: boolean; latency: number } | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   const check = async () => {
     setChecking(true);
@@ -18,7 +18,15 @@ export function StatusPanel({ showGuide }: StatusPanelProps) {
     setChecking(false);
   };
 
-  useEffect(() => { check(); }, []);
+  useEffect(() => {
+    let active = true;
+    void checkProviderStatus().then((nextStatus) => {
+      if (!active) return;
+      setStatus(nextStatus);
+      setChecking(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const modelName = MODELS.find(m => m.id === getSelectedModel())?.name || getSelectedModel().split('/').pop()?.split(':')[0] || '—';
 

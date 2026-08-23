@@ -5,6 +5,8 @@ interface VoiceWaveProps {
   mode: 'listening' | 'speaking' | 'idle';
 }
 
+const PEAK_HEIGHTS = [20, 25, 28, 23, 26] as const;
+
 export function VoiceWave({ active, mode }: VoiceWaveProps) {
   if (!active) return null;
 
@@ -19,7 +21,7 @@ export function VoiceWave({ active, mode }: VoiceWaveProps) {
           className="w-1 rounded-full"
           style={{ backgroundColor: color }}
           animate={{
-            height: active ? [8, 20 + Math.random() * 8, 8] : [4, 4, 4],
+            height: active ? [8, PEAK_HEIGHTS[i], 8] : [4, 4, 4],
             opacity: active ? [0.5, 1, 0.5] : 0.2,
           }}
           transition={{

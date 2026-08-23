@@ -1,9 +1,85 @@
 const { app, BrowserWindow, shell, Menu, Tray, globalShortcut, nativeImage } = require('electron');
 const path = require('path');
+const { ipcMain } = require('electron');
+const { pathToFileURL } = require('url');
 
 const isDev = !app.isPackaged;
 let win = null;
 let tray = null;
+let safeOperatorExecutor = null;
+const EXECUTE_CHANNEL = 'sentinel:operator:execute';
+const operatorModuleUrl = pathToFileURL(
+  path.resolve(__dirname, 'sentinel-safe-operator.mjs'),
+).href;
+const operatorModulePromise = import(operatorModuleUrl);
+
+const officeRuntimeModulePath = isDev
+  ? path.resolve(__dirname, '../../office/sentinel-office-runtime.mjs')
+  : path.join(process.resourcesPath, 'office', 'sentinel-office-runtime.mjs');
+const officeRuntimeModuleUrl = pathToFileURL(officeRuntimeModulePath).href;
+const officeRuntimePromise = import(officeRuntimeModuleUrl)
+  .then(({ createSentinelOfficeRuntime }) => createSentinelOfficeRuntime())
+  .catch(() => null);
+
+
+function isTrustedOperatorSender(event) {
+  if (!win || event.sender !== win.webContents || !event.senderFrame) return false;
+  try {
+    const senderUrl = new URL(event.senderFrame.url);
+    return isDev
+      ? senderUrl.origin === 'http://localhost:3939'
+      : senderUrl.protocol === 'file:';
+  } catch {
+    return false;
+  }
+}
+
+function projectOfficeSuccess(request, receipt) {
+  void officeRuntimePromise.then((runtime) => {
+    if (runtime) runtime.recordSuccess(request, receipt);
+  }).catch(() => {});
+}
+
+function projectOfficeBlocked(request, error) {
+  void officeRuntimePromise.then((runtime) => {
+    if (runtime) runtime.recordBlocked(request, error);
+  }).catch(() => {});
+}
+
+ipcMain.handle(EXECUTE_CHANNEL, async (event, request) => {
+  if (!isTrustedOperatorSender(event)) {
+    return { ok: false, error: { code: 'UNTRUSTED_SENDER', message: 'IPC sender is not trusted' } };
+  }
+
+  try {
+    const { createSafeOperatorExecutor } = await operatorModulePromise;
+    if (!safeOperatorExecutor) {
+      safeOperatorExecutor = createSafeOperatorExecutor({
+        transport: 'electron-ipc',
+        runtimeProvider: () => ({
+          platform: process.platform,
+          arch: process.arch,
+          node: process.versions.node,
+          electron: process.versions.electron,
+          packaged: app.isPackaged,
+        }),
+      });
+    }
+    const receipt = safeOperatorExecutor.execute(request);
+    projectOfficeSuccess(request, receipt);
+    return { ok: true, receipt };
+  } catch (error) {
+    const { SafeOperatorError } = await operatorModulePromise;
+    projectOfficeBlocked(request, error);
+    return {
+      ok: false,
+      error: {
+        code: error instanceof SafeOperatorError ? error.code : 'OPERATOR_FAILED',
+        message: error instanceof SafeOperatorError ? error.message : 'Safe operator failed',
+      },
+    };
+  }
+});
 
 Menu.setApplicationMenu(null);
 
@@ -27,12 +103,22 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
+      sandbox: true,
     },
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    try {
+      const target = new URL(url);
+      if (target.protocol === 'https:') void shell.openExternal(target.href);
+    } catch {
+      // Invalid and non-HTTPS URLs stay closed.
+    }
     return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (event) => {
+    event.preventDefault();
   });
 
   // Voice devices stay fail-closed until the dedicated hardware/dependency
@@ -102,4 +188,7 @@ app.on('activate', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  void officeRuntimePromise.then((runtime) => {
+    if (runtime) runtime.dispose();
+  }).catch(() => {});
 });

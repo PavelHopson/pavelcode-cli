@@ -29,6 +29,7 @@
 ### Sentinel Voice
 
 - отдельный voice client через `sentinel-voice`
+- безопасный локальный оператор через `sentinel-operator`: детерминированный план, ручное подтверждение, один read-only запуск и проверяемый receipt
 - локальный TTS на Windows
 - one-shot STT
 - terminal-safe push-to-talk
@@ -239,6 +240,7 @@ sentinel
 - [Установщик для Windows](docs/windows-installer.md)
 - [Sentinel Bridge API](docs/sentinel-bridge.md)
 - [Sentinel Voice MVP](docs/sentinel-voice-mvp.md)
+- [Sentinel Safe Operator](docs/sentinel-safe-operator.md)
 - [Sentinel Config Health](docs/sentinel-config-health.md)
 - [Sentinel Windows Doctor](docs/sentinel-windows-doctor.md)
 - [Kimi K3 benchmark track](docs/sentinel-kimi-k3-benchmark.md)

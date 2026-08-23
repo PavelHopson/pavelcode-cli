@@ -14,6 +14,11 @@ export const VOICE_SKILL_ALLOWLIST: VoiceSkill[] = [
 ];
 
 export type VoicePlan = {
+  schemaVersion: 'eclipse.sentinel.operator-plan.v1';
+  id: string;
+  createdAt: string;
+  skillId: VoiceSkillId;
+  label: string;
   skill: VoiceSkill;
   command: string;
   steps: string[];
@@ -25,13 +30,24 @@ export function buildVoicePlan(skillId: VoiceSkillId, rawCommand: string): Voice
   const skill = VOICE_SKILL_ALLOWLIST.find((item) => item.id === skillId);
   if (!command || !skill) return null;
   return {
+    schemaVersion: 'eclipse.sentinel.operator-plan.v1',
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    skillId: skill.id,
+    label: skill.label,
     skill,
     command,
-    steps: ['Проверить skill allowlist', 'Собрать read-only результат', 'Сформировать локальный receipt'],
+    steps: [
+      'Проверить exact skill allowlist',
+      'Проверить свежесть ручного подтверждения',
+      'Выполнить один read-only handler',
+      'Сформировать локальный receipt и снова включить STOP',
+    ],
     diff: [
-      'Файлы: без изменений',
-      'Shell и сеть: не используются',
-      'Markdown memory: только preview, запись запрещена',
+      'Файлы и память: без изменений',
+      'Shell, сеть и запуск программ: запрещены',
+      'Секреты, hostname и локальные пути: не читаются',
+      'Повторный запуск того же requestId: запрещён',
     ],
   };
 }

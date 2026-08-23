@@ -1,4 +1,4 @@
-import {} from 'react';
+import type { CSSProperties } from 'react';
 import { Plus, MessageSquare, Settings, Trash2, HelpCircle } from 'lucide-react';
 import { type ChatSession } from '../lib/ai';
 import { Tooltip } from './Tooltip';
@@ -14,11 +14,16 @@ interface SidebarProps {
   onToggleGuide: () => void;
 }
 
+type ElectronWindowStyle = CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' };
+
+const DRAG_STYLE: ElectronWindowStyle = { WebkitAppRegion: 'drag' };
+const NO_DRAG_STYLE: ElectronWindowStyle = { WebkitAppRegion: 'no-drag' };
+
 export function Sidebar({ sessions, activeId, onSelect, onNew, onDelete, onOpenSettings, showGuide, onToggleGuide }: SidebarProps) {
   return (
-    <aside className="w-64 border-r border-border flex flex-col shrink-0 hidden lg:flex" style={{ WebkitAppRegion: 'no-drag' } as any}>
+    <aside className="w-64 border-r border-border flex flex-col shrink-0 hidden lg:flex" style={NO_DRAG_STYLE}>
       {/* Logo */}
-      <div className="h-10 flex items-center gap-3 px-4 border-b border-border" style={{ WebkitAppRegion: 'drag' } as any}>
+      <div className="h-10 flex items-center gap-3 px-4 border-b border-border" style={DRAG_STYLE}>
         <div className="w-2 h-2 rounded-full bg-accent/50 shadow-[0_0_8px_rgba(107,163,255,0.3)]" />
         <span className="text-[10px] uppercase tracking-[0.25em] text-text-2 font-medium">Eclipse Sentinel</span>
       </div>

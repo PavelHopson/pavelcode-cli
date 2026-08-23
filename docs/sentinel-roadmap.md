@@ -1,5 +1,37 @@
 # Eclipse Hopson Sentinel Roadmap
 
+## Desktop dependency hardening — 2026-08-23
+
+- [x] upgrade Electron, electron-builder and Vite to advisory-free supported releases
+- [x] remove the unused deprecated electron-packager release path
+- [x] verify dashboard/root builds, supported-contract typecheck and focused Office/operator tests
+- [x] split the 506.12 KiB dashboard JavaScript chunk into bounded 282.76/211.98/12.10 KiB route chunks
+
+## Sentinel Office Core bridge — 2026-08-23
+
+- [x] project Safe Operator lifecycle into a bounded, immutable, non-blocking local outbox
+- [x] map minimized Sentinel projections to canonical `office.event.v1` inputs
+- [x] add strict workspace, metadata and persisted-response validation
+- [x] add canonical JSON plus HMAC-signed atomic ingest with origin, size and timeout limits
+- [x] cover lost-response retry, 4xx stop, 5xx/timeout bounds and adapter integration
+- [x] confirm durable same-nonce/same-request 2xx replay in local Eclipse Chat Office Core contract tests
+- [x] add Windows Credential Manager provision/read/confirmed-delete and pass live PostgreSQL restart/replay end-to-end QA
+- [x] compose Credential Manager, signed ingest, canonical adapter and lifecycle in the Electron main process behind explicit opt-in configuration
+- [x] add a local staged dual-key rotation workflow with secret-reuse rejection, dual-key postcondition checks and explicit old-key retirement
+- [ ] provision and rotate the real production producer credential through the deployment secret manager; no production secret is stored locally
+
+
+## Safe Operator execution slice — 2026-08-23
+
+- [x] replace the browser-only Command Room simulation with a real Electron IPC execution boundary
+- [x] add deterministic Russian/English routing for three read-only local skills
+- [x] validate versioned exact-key plan, approval and receipt contracts fail-closed
+- [x] enforce plan/approval TTL, replay protection, rate limiting and a one-shot STOP control
+- [x] add a standalone `sentinel-operator` CLI with optional existing Windows STT/TTS adapters
+- [x] keep ordinary browser use explicitly preview-only instead of claiming native execution
+- [x] add focused contract, renderer-boundary and CSP regression coverage
+- [ ] introduce mutable skills only as separate resource-scoped contracts with rollback and audit storage
+
 ## Safe Voice Command Room — 2026-08-20
 
 - [x] add a calm desktop HUD with explicit microphone, speaker, local voice and execution states
