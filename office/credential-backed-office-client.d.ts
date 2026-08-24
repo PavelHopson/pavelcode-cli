@@ -2,6 +2,7 @@ import type { OfficeCredentialStore } from './windows-office-credential-store.mj
 
 export interface CredentialBackedOfficeClientOptions {
   baseUrl: string
+  basePath?: string
   allowedOrigins: string[]
   allowHttpLoopback?: boolean
   workspaceId: string

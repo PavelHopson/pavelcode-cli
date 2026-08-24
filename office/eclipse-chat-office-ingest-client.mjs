@@ -291,6 +291,16 @@ function validateBaseUrl(baseUrl, allowedOrigins, allowHttpLoopback) {
   return parsed.origin
 }
 
+function validateBasePath(basePath) {
+  if (basePath === undefined || basePath === '') return ''
+  if (typeof basePath !== 'string'
+    || basePath.length > 128
+    || !/^\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(basePath)) {
+    throw new TypeError('Office basePath must be an absolute normalized path prefix')
+  }
+  return basePath
+}
+
 function integerOption(value, fallback, minimum, maximum, name) {
   const selected = value === undefined ? fallback : value
   if (!Number.isSafeInteger(selected) || selected < minimum || selected > maximum) {
@@ -301,6 +311,7 @@ function integerOption(value, fallback, minimum, maximum, name) {
 
 export function createEclipseChatOfficeIngestClient(options = {}) {
   const baseOrigin = validateBaseUrl(options.baseUrl, options.allowedOrigins, options.allowHttpLoopback)
+  const basePath = validateBasePath(options.basePath)
   const workspaceId = validateBoundedString(options.workspaceId, 'workspaceId', 160)
   const keyId = validateKeyId(options.keyId)
   const secret = validateSecret(options.secret)
@@ -321,7 +332,7 @@ export function createEclipseChatOfficeIngestClient(options = {}) {
     throw new TypeError('Retries require an idempotent replay response contract')
   }
 
-  const endpoint = `${baseOrigin}/api/servers/${encodeURIComponent(workspaceId)}/office/events/ingest`
+  const endpoint = `${baseOrigin}${basePath}/api/servers/${encodeURIComponent(workspaceId)}/office/events/ingest`
   let disposed = false
 
   function publishBatch(batch) {

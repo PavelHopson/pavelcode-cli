@@ -10,6 +10,7 @@ export interface SentinelOfficeRuntimeStatus {
 export interface SentinelOfficeRuntimeConfig {
   enabled: true
   baseUrl: string
+  basePath: string
   allowedOrigins: readonly string[]
   allowHttpLoopback: boolean
   workspaceId: string

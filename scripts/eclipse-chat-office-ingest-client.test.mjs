@@ -126,6 +126,23 @@ test('client sends an exact signed request and returns validated canonical event
   assert.equal(requests[0].init.body, stableCanonicalJson({ schemaVersion: 'office.ingest.v1', events: [input()] }))
 })
 
+test('client supports one explicit normalized deployment path prefix', async () => {
+  const requests = []
+  const client = createEclipseChatOfficeIngestClient(clientOptions(async (url, init) => {
+    requests.push(url)
+    return successResponse(JSON.parse(init.body).events)
+  }, { basePath: '/eclipse-chat', maxAttempts: 1 }))
+
+  await client.publishBatch([input()])
+  assert.equal(requests[0], 'https://office.example.test/eclipse-chat/api/servers/eclipse-forge/office/events/ingest')
+  for (const basePath of ['/', '/eclipse-chat/', '//eclipse-chat', '/eclipse.chat', '/../admin', 'eclipse-chat']) {
+    assert.throws(
+      () => createEclipseChatOfficeIngestClient(clientOptions(() => {}, { basePath, maxAttempts: 1 })),
+      /basePath/i,
+    )
+  }
+})
+
 test('ambiguous retry reuses the exact signed idempotency tuple', async () => {
   const requests = []
   const fetchImpl = async (url, init) => {

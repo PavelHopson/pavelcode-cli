@@ -10,6 +10,7 @@ export async function createCredentialBackedOfficeIngestClient(options = {}) {
   try {
     return lease.withBytes((secret) => createEclipseChatOfficeIngestClient({
       baseUrl: options.baseUrl,
+      basePath: options.basePath,
       allowedOrigins: options.allowedOrigins,
       allowHttpLoopback: options.allowHttpLoopback,
       workspaceId: options.workspaceId,

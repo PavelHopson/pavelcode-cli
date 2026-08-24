@@ -1,14 +1,16 @@
 # Eclipse Chat Office Ingest v1
 
-Статус Sentinel-клиента: реализован и покрыт локальными contract/security-тестами 2026-08-23.
+Статус Sentinel-клиента: реализован и покрыт локальными contract/security-тестами 2026-08-24.
 Статус server-side: durable ingest, exact same-request 2xx replay и conflict rejection реализованы и
-покрыты локальными contract/security-тестами в Eclipse Chat Office Core. Live PostgreSQL restart/replay QA
-и production credential provisioning ещё не выполнены.
+покрыты contract/security-тестами в Eclipse Chat Office Core. Live PostgreSQL restart/replay QA пройден.
+Production producer `eclipse-hopson-sentinel` provision-ится из GitHub Environment только для workspace
+`cmp2ksqyg00059j5kuqxoerqr`; подписанная доставка из Windows Credential Manager подтверждена событием
+`agent.state.changed` с server-assigned `sequence: 1`.
 
 ## HTTP-контракт
 
 ```text
-POST /api/servers/<workspaceId>/office/events/ingest
+POST <basePath>/api/servers/<workspaceId>/office/events/ingest
 content-type: application/json
 x-office-key-id: <^[a-z0-9][a-z0-9._-]{0,63}$>
 x-office-timestamp: <Unix milliseconds>
@@ -104,6 +106,8 @@ Office Core возвращает только точный JSON envelope, сов
 - endpoint не принимает JWT пользователя, cookie, query credential или redirect;
 - клиент разрешает только точный configured origin; HTTP возможен лишь для явно разрешённого
   loopback, удалённый endpoint требует HTTPS;
+- отдельный `basePath` допускает только нормализованные сегменты `/[A-Za-z0-9_-]+` без trailing
+  slash, query, fragment, dot-segments или смены origin; production использует `/eclipse-chat`;
 - production secret загружается как bytes из Windows Credential Manager/DPAPI или эквивалентного
   service secret store, не из renderer, URL, события, Git, analytics или логов;
 - серверные error bodies и transport exception text не попадают в Sentinel receipt/UI;
@@ -111,5 +115,6 @@ Office Core возвращает только точный JSON envelope, сов
 - HMAC-аутентификация не заменяет TLS: она подтверждает producer и целостность, но не скрывает body.
 
 Sentinel-реализация: `office/eclipse-chat-office-ingest-client.mjs`. Она предоставляет атомарный
-`publishBatch`, совместимый с `createEclipseChatOfficePublisher`. Реальное runtime-подключение
-оставлено выключенным до secure credential provisioning и live PostgreSQL restart/replay test.
+`publishBatch`, совместимый с `createEclipseChatOfficePublisher`. Production credential, scoped
+server binding и одна безопасная signed delivery подтверждены; секрет не читался оператором и не
+попадал в argv, Git, renderer, event metadata или логи.

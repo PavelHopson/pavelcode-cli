@@ -81,6 +81,16 @@ function exactOrigin(value, allowHttpLoopback) {
   return parsed.origin
 }
 
+function exactBasePath(value) {
+  if (value === undefined || value === '') return ''
+  if (typeof value !== 'string'
+    || value.length > 128
+    || !/^\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(value)) {
+    fail('OFFICE_CONFIGURATION_INVALID')
+  }
+  return value
+}
+
 function requestedBy(environment) {
   return environment?.SENTINEL_OFFICE_ENABLED !== undefined
     && environment.SENTINEL_OFFICE_ENABLED !== '0'
@@ -107,6 +117,7 @@ export function readSentinelOfficeRuntimeConfig(environment = process.env) {
   }
   const allowHttpLoopback = allowHttpLoopbackValue === '1'
   const baseUrl = exactOrigin(environment.SENTINEL_OFFICE_BASE_URL, allowHttpLoopback)
+  const basePath = exactBasePath(environment.SENTINEL_OFFICE_BASE_PATH)
   const workspaceId = exactIdentifier(environment.SENTINEL_OFFICE_WORKSPACE_ID, 160)
   const keyId = environment.SENTINEL_OFFICE_KEY_ID
   if (typeof keyId !== 'string' || !KEY_ID_PATTERN.test(keyId)) {
@@ -116,6 +127,7 @@ export function readSentinelOfficeRuntimeConfig(environment = process.env) {
   return Object.freeze({
     enabled: true,
     baseUrl,
+    basePath,
     allowedOrigins: Object.freeze([baseUrl]),
     allowHttpLoopback,
     workspaceId,

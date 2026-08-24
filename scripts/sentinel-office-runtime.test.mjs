@@ -13,6 +13,7 @@ const CONFIG = Object.freeze({
   SENTINEL_OFFICE_ENABLED: '1',
   SENTINEL_OFFICE_ALLOW_HTTP_LOOPBACK: '1',
   SENTINEL_OFFICE_BASE_URL: 'http://127.0.0.1:43210',
+  SENTINEL_OFFICE_BASE_PATH: '/eclipse-chat',
   SENTINEL_OFFICE_WORKSPACE_ID: 'workspace-test',
   SENTINEL_OFFICE_KEY_ID: 'sentinel-test-01',
 })
@@ -44,6 +45,12 @@ test('Office runtime requires an exact origin and blocks secret-bearing environm
     () => readSentinelOfficeRuntimeConfig({ ...CONFIG, SENTINEL_OFFICE_BASE_URL: 'http://127.0.0.1:43210/path' }),
     (error) => error instanceof SentinelOfficeRuntimeError && error.code === 'OFFICE_CONFIGURATION_INVALID',
   )
+  for (const basePath of ['/', '/eclipse-chat/', '//eclipse-chat', '/../admin', 'eclipse-chat']) {
+    assert.throws(
+      () => readSentinelOfficeRuntimeConfig({ ...CONFIG, SENTINEL_OFFICE_BASE_PATH: basePath }),
+      (error) => error instanceof SentinelOfficeRuntimeError && error.code === 'OFFICE_CONFIGURATION_INVALID',
+    )
+  }
 
   assert.throws(
     () => readSentinelOfficeRuntimeConfig({ ...CONFIG, SENTINEL_OFFICE_KEY_ID: 'UPPERCASE' }),
@@ -95,7 +102,7 @@ test('enabled runtime reads the credential in main memory and publishes through 
   }
   const fetch = async (url, request) => {
     fetchCalls += 1
-    assert.equal(url, 'http://127.0.0.1:43210/api/servers/workspace-test/office/events/ingest')
+    assert.equal(url, 'http://127.0.0.1:43210/eclipse-chat/api/servers/workspace-test/office/events/ingest')
     assert.equal(request.method, 'POST')
     assert.equal(request.redirect, 'error')
     assert.equal(request.credentials, 'omit')
