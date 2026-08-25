@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml)
 ![Desktop](https://img.shields.io/badge/Desktop-Windows-111318?style=flat-square&logo=windows11&logoColor=F3F5F7)
-![Release](https://img.shields.io/badge/Ultron-1.2.1-8E1024?style=flat-square)
+![Release](https://img.shields.io/badge/Ultron-1.2.2-8E1024?style=flat-square)
 ![Runtime](https://img.shields.io/badge/Sentinel-0.1.7-15181D?style=flat-square)
 ![Local first](https://img.shields.io/badge/data-local--first-45D89A?style=flat-square)
 ![Policy](https://img.shields.io/badge/execution-human%20approved-F2C94C?style=flat-square)
@@ -83,6 +83,7 @@ explicit click
 ```
 
 - один STT process одновременно;
+- USB-микрофоны открываются через локальный SDL DirectSound backend с согласованием `16 kHz / mono`;
 - фиксированный timeout и rate limit;
 - bounded JSON output;
 - аудио и транскрипт не сохраняются;

@@ -284,3 +284,15 @@ This document records blocked checks, failed attempts, and known limitations dur
 - Playwright production-preview QA passed at 1440x960 normal motion and 390x844 reduced motion with
   zero console/page errors and zero horizontal overflow. The mobile launcher was moved away from the
   primary bottom action and hidden while the contact panel is open.
+
+# 2026-08-25 — FIFINE microphone capture compatibility
+
+- Reproduced the installed voice failure outside the UI. `whisper-stream` discovered
+  `Микрофон (2- fifine Microphone)`, but SDL WASAPI rejected the endpoint with
+  `WASAPI can't initialize audio client: Параметр задан неверно`.
+- Verified the same runtime, model and capture device with `SDL_AUDIODRIVER=directsound`.
+  SDL opened the device as the exact Whisper input contract: 16 kHz, mono, float audio.
+- Tuned the one-shot VAD threshold from `0.60` to `0.45` for ordinary USB-microphone
+  speech while staying above the `0.35` level that produced a noise false positive.
+- Pinned `directsound` only inside the trusted one-shot Whisper child process. No renderer input,
+  background capture, audio persistence or additional microphone authority was introduced.

@@ -36,6 +36,8 @@ test('Ultron one-shot STT uses a fixed, bounded and trusted Electron IPC contrac
   assert.ok(packageJson.build.extraResources.some((resource) => resource.to === 'voice/sentinel-stt.ps1'))
   assert.match(stt, /Console\]::OutputEncoding = \$utf8/)
   assert.match(stt, /whisper\\Release\\whisper-stream\.exe/)
+  assert.match(stt, /EnvironmentVariables\['SDL_AUDIODRIVER'\] = 'directsound'/)
+  assert.match(stt, /-vth 0\.45/)
   assert.match(stt, /ggml-large-v3-turbo-q5_0\.bin/)
   assert.match(stt, /System\.Diagnostics\.ProcessStartInfo/)
   assert.match(stt, /CreateNoWindow = \$true/)

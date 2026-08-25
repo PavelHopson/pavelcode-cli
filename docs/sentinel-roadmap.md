@@ -9,6 +9,7 @@
 - [x] add visible stop-speaking and global Motion controls; honor live Windows reduced-motion changes
 - [x] limit primary animation loops to compositor-friendly transform and opacity
 - [x] verify desktop normal-motion and compact mobile reduced-motion flows with zero overflow or browser errors
+- [x] fix FIFINE USB microphone capture by pinning the trusted Whisper child to SDL DirectSound
 - [ ] add a local TTS voice inventory and testable voice preview before offering voice selection
 - [ ] evaluate compact always-on-top mode without enabling wake word or background listening
 

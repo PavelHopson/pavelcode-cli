@@ -72,7 +72,7 @@ function Invoke-WhisperRecognition {
     throw 'The local Whisper model is missing.'
   }
 
-  $arguments = '-m "{0}" -l ru --step 0 --length 6000 --keep 200 -vth 0.60 -fth 100 -nf' -f $modelPath
+  $arguments = '-m "{0}" -l ru --step 0 --length 6000 --keep 200 -vth 0.45 -fth 100 -nf' -f $modelPath
   $startInfo = New-Object System.Diagnostics.ProcessStartInfo
   $startInfo.FileName = $whisperExe
   $startInfo.Arguments = $arguments
@@ -83,6 +83,10 @@ function Invoke-WhisperRecognition {
   $startInfo.RedirectStandardError = $true
   $startInfo.StandardOutputEncoding = $utf8
   $startInfo.StandardErrorEncoding = $utf8
+  # SDL's default WASAPI backend rejects some USB microphones even though the
+  # endpoint is visible. DirectSound negotiates the required 16 kHz mono format
+  # reliably while keeping the same local, one-shot capture boundary.
+  $startInfo.EnvironmentVariables['SDL_AUDIODRIVER'] = 'directsound'
 
   $script:whisperProcess = New-Object System.Diagnostics.Process
   $script:whisperProcess.StartInfo = $startInfo

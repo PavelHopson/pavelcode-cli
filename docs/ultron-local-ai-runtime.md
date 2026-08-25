@@ -68,6 +68,10 @@ WAV-файлы и не пишет распознанный текст в runtime
 действуют rate limit, общий process timeout и ограничение JSON-ответа. Фоновая запись и
 wake word отсутствуют.
 
+На Windows capture-процесс фиксирует SDL backend `directsound`. Это обходит подтверждённую
+несовместимость стандартного WASAPI backend с USB-микрофоном FIFINE и согласует требуемый
+Whisper-формат `16 kHz / mono`, не меняя системные настройки устройства.
+
 ## Local model profiles
 
 | Профиль | Endpoint | Полномочия |
