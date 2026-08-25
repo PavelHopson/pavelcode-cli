@@ -21,8 +21,9 @@ test('guide describes only the current local voice and read-only operator paths'
 
   assert.match(guide, /Как пользоваться Eclipse Ultron/)
   assert.match(guide, /Qwen 3 8B/)
-  assert.match(guide, /Говорить с Альтроном/)
-  assert.match(guide, /новое нажатие/i)
+  assert.match(guide, /Включить живой разговор/)
+  assert.match(guide, /говорите свободно/i)
+  assert.match(guide, /через tray/i)
   assert.match(guide, /проверьте план и diff/i)
   assert.match(guide, /Operator не пишет файлы, не запускает shell и не использует сеть/)
   assert.doesNotMatch(guide, /автономн|полный доступ|управляет компьютером/i)

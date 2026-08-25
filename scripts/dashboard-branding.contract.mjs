@@ -75,7 +75,7 @@ test('Ultron shell exposes branded, accessible and responsive primary paths', as
   assert.match(app, />Альтрон<\/button>/)
   assert.match(app, />Оператор<\/button>/)
   assert.doesNotMatch(app, /components\/Chat|components\/Sidebar|UltronContactDock/)
-  assert.match(conversation, /Говорить с Альтроном/)
+  assert.match(conversation, /Включить живой разговор/)
   assert.match(conversation, /Последний голосовой обмен/)
   assert.doesNotMatch(conversation, /<input|<textarea/)
   assert.match(settings, /aria-modal="true"/)

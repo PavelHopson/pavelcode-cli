@@ -107,18 +107,18 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           <div className="grid grid-cols-2 gap-3">
             <div className="px-4 py-3 bg-card border border-border rounded-xl">
               <p className="flex items-center gap-2 text-xs font-medium text-text-1"><Mic size={14} /> Whisper offline</p>
-              <p className="mt-1 text-[10px] text-text-3">Распознавание после клика</p>
+              <p className="mt-1 text-[10px] text-text-3">Одна фраза или явный живой режим</p>
             </div>
             <div className="px-4 py-3 bg-card border border-border rounded-xl">
-              <p className="flex items-center gap-2 text-xs font-medium text-text-1"><Volume2 size={14} /> Мужской голос</p>
-              <p className="mt-1 text-[10px] text-text-3">Microsoft Pavel по умолчанию</p>
+              <p className="flex items-center gap-2 text-xs font-medium text-text-1"><Volume2 size={14} /> Piper Denis</p>
+              <p className="mt-1 text-[10px] text-text-3">Быстрый русский нейроголос · offline</p>
             </div>
           </div>
           <section className="space-y-3 px-4 py-4 bg-card border border-border rounded-xl" aria-labelledby="voice-profile-title">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p id="voice-profile-title" className="text-xs font-medium text-text-1">Голос Альтрона</p>
-                <p className="mt-1 text-[10px] text-text-3">Тембр и скорость применяются к следующему ответу</p>
+                <p className="mt-1 text-[10px] text-text-3">Piper — основной. Windows Voice — резервный fallback</p>
               </div>
               <button
                 type="button"
@@ -130,7 +130,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </div>
 
             <label className="block text-[10px] font-medium text-text-2" htmlFor="ultron-voice-select">
-              Русский голос
+              Резервный Windows-голос
             </label>
             <select
               id="ultron-voice-select"
@@ -155,9 +155,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             <input
               id="ultron-voice-rate"
               type="range"
-              min="0.9"
-              max="1.4"
-              step="0.05"
+              min="0.95"
+              max="1.12"
+              step="0.01"
               value={voicePreferences.rate}
               onChange={(event) => updateVoicePreferences({ ...voicePreferences, rate: Number(event.target.value) })}
               className="w-full accent-red-500"
@@ -168,7 +168,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               <ShieldCheck size={14} /> Приватность по умолчанию
             </p>
             <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
-              Нет фоновой записи и wake word. Каждая реплика начинается отдельным нажатием.
+              Живой режим включается только вручную и заметен на экране и в tray. Аудио не сохраняется; остановка доступна одним нажатием.
             </p>
           </div>
           <div className="px-4 py-3 bg-card border border-border rounded-xl">

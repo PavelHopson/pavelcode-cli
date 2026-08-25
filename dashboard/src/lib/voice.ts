@@ -35,9 +35,39 @@ export type LocalSpeechResult =
   | { ok: true; text: string; confidence: number | null }
   | { ok: false; error: { code: string; message: string } };
 
+export type LiveVoiceStateName = 'idle' | 'starting' | 'listening' | 'paused' | 'error';
+
+export interface LiveVoiceState {
+  state: LiveVoiceStateName;
+  detail: string;
+}
+
+export type LiveVoiceControlResult =
+  | { ok: true; active: boolean; state: LiveVoiceStateName }
+  | { ok: false; active?: boolean; state?: LiveVoiceStateName; error?: { code: string; message: string } };
+
+export interface LiveVoiceTranscript {
+  text: string;
+  capturedAt: number;
+  engine: 'whisper.cpp-live';
+}
+
+type FastSpeechResult =
+  | { ok: true; audio: Uint8Array; engine: 'piper-denis-medium' }
+  | { ok: false; error?: { code: string; message: string } };
+
 type UltronVoiceWindow = Window & {
   ultronVoice?: {
     listenOnce(): Promise<LocalSpeechResult>;
+    synthesize(text: string): Promise<FastSpeechResult>;
+    stopSpeech(): Promise<boolean>;
+    startLive(): Promise<LiveVoiceControlResult>;
+    stopLive(): Promise<LiveVoiceControlResult>;
+    pauseLive(): Promise<LiveVoiceControlResult>;
+    resumeLive(): Promise<LiveVoiceControlResult>;
+    onLiveState(callback: (payload: unknown) => void): number;
+    onLiveTranscript(callback: (payload: unknown) => void): number;
+    removeLiveListener(id: number): boolean;
   };
 };
 
@@ -54,6 +84,80 @@ export async function listenOnceLocal(): Promise<LocalSpeechResult> {
     };
   }
   return bridge.listenOnce();
+}
+
+export function isLiveSTTSupported(): boolean {
+  return typeof (window as UltronVoiceWindow).ultronVoice?.startLive === 'function';
+}
+
+const LIVE_STATES = new Set<LiveVoiceStateName>(['idle', 'starting', 'listening', 'paused', 'error']);
+
+function normalizeLiveState(payload: unknown): LiveVoiceState | null {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const candidate = payload as Partial<LiveVoiceState>;
+  if (!candidate.state || !LIVE_STATES.has(candidate.state)) return null;
+  return { state: candidate.state, detail: String(candidate.detail || '').slice(0, 240) };
+}
+
+function normalizeLiveTranscript(payload: unknown): LiveVoiceTranscript | null {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const candidate = payload as Partial<LiveVoiceTranscript>;
+  const text = typeof candidate.text === 'string' ? candidate.text.trim().slice(0, 500) : '';
+  if (!text) return null;
+  return {
+    text,
+    capturedAt: Number.isFinite(candidate.capturedAt) ? Number(candidate.capturedAt) : Date.now(),
+    engine: 'whisper.cpp-live',
+  };
+}
+
+function liveBridge() {
+  return (window as UltronVoiceWindow).ultronVoice;
+}
+
+function unavailableLiveResult(): LiveVoiceControlResult {
+  return {
+    ok: false,
+    active: false,
+    state: 'idle',
+    error: { code: 'VOICE_DESKTOP_REQUIRED', message: 'Живой микрофон доступен только в Eclipse Ultron Desktop.' },
+  };
+}
+
+export async function startLiveLocal(): Promise<LiveVoiceControlResult> {
+  return liveBridge()?.startLive() ?? unavailableLiveResult();
+}
+
+export async function stopLiveLocal(): Promise<LiveVoiceControlResult> {
+  return liveBridge()?.stopLive() ?? unavailableLiveResult();
+}
+
+export async function pauseLiveLocal(): Promise<LiveVoiceControlResult> {
+  return liveBridge()?.pauseLive() ?? unavailableLiveResult();
+}
+
+export async function resumeLiveLocal(): Promise<LiveVoiceControlResult> {
+  return liveBridge()?.resumeLive() ?? unavailableLiveResult();
+}
+
+export function subscribeLiveVoice(
+  onState: (state: LiveVoiceState) => void,
+  onTranscript: (transcript: LiveVoiceTranscript) => void,
+): () => void {
+  const bridge = liveBridge();
+  if (!bridge) return () => {};
+  const stateId = bridge.onLiveState((payload) => {
+    const state = normalizeLiveState(payload);
+    if (state) onState(state);
+  });
+  const transcriptId = bridge.onLiveTranscript((payload) => {
+    const transcript = normalizeLiveTranscript(payload);
+    if (transcript) onTranscript(transcript);
+  });
+  return () => {
+    bridge.removeLiveListener(stateId);
+    bridge.removeLiveListener(transcriptId);
+  };
 }
 
 export function isSpeechSupported(): boolean {
@@ -92,9 +196,16 @@ export function createRecognition(
 
 let speechSequence = 0;
 let activeSpeech: { id: number; resolve: () => void; timeoutId: number } | null = null;
+let activeAudioSpeech: {
+  id: number;
+  audio: HTMLAudioElement;
+  objectUrl: string;
+} | null = null;
+
+const MAX_LOCAL_AUDIO_BYTES = 12 * 1024 * 1024;
 
 const VOICE_PREFERENCES_KEY = 'ultron-voice-preferences-v1';
-const DEFAULT_VOICE_RATE = 1.2;
+const DEFAULT_VOICE_RATE = 1.06;
 const DEFAULT_VOICE_PITCH = 0.82;
 
 export interface VoicePreferences {
@@ -119,7 +230,7 @@ export function loadVoicePreferences(): VoicePreferences {
     return {
       voiceName: typeof candidate.voiceName === 'string' ? candidate.voiceName.slice(0, 120) : fallback.voiceName,
       rate: typeof candidate.rate === 'number' && Number.isFinite(candidate.rate)
-        ? clamp(candidate.rate, 0.9, 1.4)
+        ? clamp(candidate.rate, 0.95, 1.12)
         : fallback.rate,
       pitch: typeof candidate.pitch === 'number' && Number.isFinite(candidate.pitch)
         ? clamp(candidate.pitch, 0.7, 1.05)
@@ -133,7 +244,7 @@ export function loadVoicePreferences(): VoicePreferences {
 export function saveVoicePreferences(preferences: VoicePreferences): VoicePreferences {
   const normalized: VoicePreferences = {
     voiceName: preferences.voiceName.slice(0, 120),
-    rate: clamp(preferences.rate, 0.9, 1.4),
+    rate: clamp(preferences.rate, 0.95, 1.12),
     pitch: clamp(preferences.pitch, 0.7, 1.05),
   };
   localStorage.setItem(VOICE_PREFERENCES_KEY, JSON.stringify(normalized));
@@ -179,10 +290,55 @@ function finishActiveSpeech(id: number) {
   resolve();
 }
 
+function clearActiveAudioSpeech(id: number) {
+  if (!activeAudioSpeech || activeAudioSpeech.id !== id) return;
+  const objectUrl = activeAudioSpeech.objectUrl;
+  activeAudioSpeech = null;
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+}
+
+async function playAudioBlob(audioBlob: Blob, id: number): Promise<boolean> {
+  if (audioBlob.size <= 0 || audioBlob.size > MAX_LOCAL_AUDIO_BYTES || speechSequence !== id) return false;
+  const objectUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(objectUrl);
+  const preferences = loadVoicePreferences();
+  audio.playbackRate = clamp(preferences.rate, 0.95, 1.12);
+  audio.preservesPitch = true;
+  activeAudioSpeech = { id, audio, objectUrl };
+
+  return new Promise<boolean>((resolve) => {
+    const finish = (played: boolean) => {
+      clearActiveAudioSpeech(id);
+      resolve(played);
+    };
+    audio.onended = () => finish(true);
+    audio.onerror = () => finish(false);
+    void audio.play().catch(() => finish(false));
+  });
+}
+
+async function playFastLocalSpeech(text: string, id: number): Promise<boolean> {
+  const bridge = liveBridge();
+  if (!bridge?.synthesize) return false;
+  try {
+    const result = await bridge.synthesize(text);
+    if (!result?.ok || !(result.audio instanceof Uint8Array)) return false;
+    const bytes = new Uint8Array(result.audio);
+    if (bytes.byteLength <= 44 || bytes.byteLength > MAX_LOCAL_AUDIO_BYTES) return false;
+    const header = String.fromCharCode(...bytes.slice(0, 12));
+    if (!header.startsWith('RIFF') || header.slice(8, 12) !== 'WAVE') return false;
+    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return playAudioBlob(new Blob([buffer], { type: 'audio/wav' }), id);
+  } catch {
+    return false;
+  }
+}
+
 export async function speak(text: string, lang: string = 'ru-RU'): Promise<void> {
   if (!isTTSSupported()) return;
 
   stopSpeaking();
+  const speechId = ++speechSequence;
 
   // Clean markdown from text
   const clean = text
@@ -197,12 +353,15 @@ export async function speak(text: string, lang: string = 'ru-RU'): Promise<void>
 
   // Take first 500 chars for TTS
   const short = clean.length > 500 ? clean.slice(0, 500) + '...' : clean;
+  const fastText = short.slice(0, 400);
+  if (await playFastLocalSpeech(fastText, speechId)) return;
+  if (speechSequence !== speechId) return;
+
   const preferences = loadVoicePreferences();
   const voices = await getAvailableVoices();
 
   return new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(short);
-    const speechId = ++speechSequence;
     utterance.lang = lang;
     utterance.rate = preferences.rate;
     utterance.pitch = preferences.pitch;
@@ -230,6 +389,12 @@ export async function speak(text: string, lang: string = 'ru-RU'): Promise<void>
 }
 
 export function stopSpeaking() {
+  speechSequence += 1;
+  void liveBridge()?.stopSpeech?.();
+  if (activeAudioSpeech) {
+    activeAudioSpeech.audio.pause();
+    clearActiveAudioSpeech(activeAudioSpeech.id);
+  }
   if (isTTSSupported()) speechSynthesis.cancel();
   if (activeSpeech) finishActiveSpeech(activeSpeech.id);
 }

@@ -4,9 +4,17 @@ import test from 'node:test'
 
 test('desktop operator IPC exposes one invoke-only capability', async () => {
   const preload = await readFile(new URL('../dashboard/electron/preload.cjs', import.meta.url), 'utf8')
-  assert.match(preload, /contextBridge\.exposeInMainWorld\('sentinelOperator'/)
-  assert.match(preload, /ipcRenderer\.invoke\(EXECUTE_CHANNEL, request\)/)
-  assert.doesNotMatch(preload, /ipcRenderer\.(?:send|sendSync|on|once|removeListener)/)
+  const operatorStart = preload.indexOf("contextBridge.exposeInMainWorld('sentinelOperator'")
+  const operatorEnd = preload.indexOf("contextBridge.exposeInMainWorld('ultronVoice'", operatorStart)
+  const operatorBridge = preload.slice(operatorStart, operatorEnd)
+
+  assert.equal(operatorStart >= 0, true)
+  assert.equal(operatorEnd > operatorStart, true)
+  assert.match(operatorBridge, /ipcRenderer\.invoke\(EXECUTE_CHANNEL, request\)/)
+  assert.doesNotMatch(operatorBridge, /ipcRenderer\.(?:send|sendSync|on|once|removeListener)/)
+  assert.doesNotMatch(preload, /ipcRenderer\.(?:send|sendSync|once)/)
+  assert.match(preload, /ipcRenderer\.on\(channel, listener\)/)
+  assert.match(preload, /ipcRenderer\.removeListener\(entry\.channel, entry\.listener\)/)
   assert.doesNotMatch(preload, /shell|child_process|fs\b/)
 })
 

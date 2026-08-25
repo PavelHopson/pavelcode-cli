@@ -41,7 +41,7 @@
 
 | Поверхность | Что даёт | Текущая граница |
 | --- | --- | --- |
-| **Альтрон** | центральный живой voice-first диалог: one-shot STT, быстрый локальный ответ и TTS | без текстового composer; одна реплика на один явный клик |
+| **Альтрон** | центральный voice-first диалог: явный live STT, потоковый локальный ответ и быстрый neural TTS | без text composer, wake word и автозапуска микрофона |
 | **Operator** | command room с plan, diff, approval и receipt | execute требует отдельного approval и снятия STOP |
 | **Ultron Lab** | изолированный инвентарь 27B research-моделей | не участвует в живом голосе; без tools, shell, filesystem, network и execute |
 | **Sentinel CLI** | coding-agent, provider routing, bridge и MCP contracts | расширенные права зависят от явной конфигурации |
@@ -61,9 +61,10 @@
     </td>
     <td>
       <strong>Альтрон — основной экран, а не дополнение к текстовому чату.</strong><br/><br/>
-      Нажатие «Говорить с Альтроном» распознаёт одну фразу, отправляет её только в
-      закреплённый быстрый Qwen 3 8B и озвучивает ответ. Последняя реплика и ответ видны
-      для проверки. Микрофон никогда не запускается автоматически.
+      «Включить живой разговор» запускает один persistent Whisper process. После этого
+      можно говорить без повторного клика: Альтрон приглушает transcript delivery во время
+      ответа и сам возвращается к прослушиванию. Микрофон не запускается автоматически,
+      активное состояние видно на экране и в tray.
     </td>
   </tr>
 </table>
@@ -71,25 +72,27 @@
 Локальный voice pipeline:
 
 ```text
-explicit click
-    └─> trusted Electron IPC (без renderer-параметров)
+explicit live start
+    └─> trusted Electron IPC (fixed executable/model)
           └─> whisper.cpp + large-v3-turbo-q5_0
                 └─> transcript in memory
-                      └─> fixed Qwen 3 8B → visible answer → bounded TTS
+                      └─> fixed Qwen 3 8B streaming answer
+                            └─> first complete sentence → Piper Denis WAV in memory
 
 Operator: explicit dictation → editable command → plan → diff → approval → receipt
 ```
 
-- один STT process одновременно;
+- один persistent STT process только после явного включения; stop доступен в UI и tray;
 - USB-микрофоны открываются через локальный SDL DirectSound backend с согласованием `16 kHz / mono`;
 - фиксированный timeout и rate limit;
 - bounded JSON output;
 - аудио и транскрипт не сохраняются;
 - визуальные состояния `listening / thinking / speaking / success / error` синхронизированы с turn;
-- TTS ограничен 500 символами и 45 секундами, голос можно остановить вручную;
-- голосовой профиль по умолчанию использует мужской Microsoft Pavel с более глубоким тембром и скоростью 1.20×; голос и скорость меняются с мгновенным preview в настройках;
-- модель прогревается при старте и повторно при нажатии на микрофон, получает только восемь последних сообщений и формирует короткую реплику до 160 токенов;
-- wake word и background listening выключены.
+- production TTS ограничен 400 символами, 12 MiB WAV и 8 секундами process time; голос можно остановить вручную;
+- основной voice — CC0 Piper `ru_RU-denis-medium`; проверенный Windows voice остаётся fallback;
+- измеренный Piper path генерирует 5.39 сек аудио за 0.67 сек, тогда как Qwen3-TTS 0.6B warm test занял 13.21 сек для 2.96 сек аудио и оставлен только в Studio/Lab;
+- модель прогревается при старте, получает восемь последних сообщений, отвечает до 120 токенов и начинает говорить по первой законченной фразе;
+- wake word, startup capture и standing microphone authorization отсутствуют.
 
 Подробности: [Eclipse Ultron Local AI Runtime](docs/ultron-local-ai-runtime.md).
 
@@ -136,7 +139,7 @@ flowchart LR
 | Human approval | execute недоступен до preview плана и явного подтверждения |
 | One-shot permission | approval сгорает после одного результата |
 | Kill switch | STOP включён по умолчанию и блокирует execute |
-| Voice privacy | только явный one-shot capture; без background recording |
+| Voice privacy | явный live start, видимый active state, one-click/tray stop, без audio persistence |
 | Renderer boundary | fixed IPC channel, zero user-controlled process arguments |
 | Process safety | `spawn`, `shell: false`, timeout, output limit, one in-flight process |
 | Local endpoints | Ollama profiles слушают только loopback |

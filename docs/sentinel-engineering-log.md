@@ -337,3 +337,22 @@ This document records blocked checks, failed attempts, and known limitations dur
   to 160 tokens with a one-to-two-sentence system contract.
 - Kept all voice preferences local. No cloud TTS, voice cloning, background microphone capture or new system
   installation was introduced. MOSS-TTS-Nano ONNX remains a separately benchmarked E-drive candidate.
+
+# 2026-08-25 — explicit live conversation and fast neural voice
+
+- Added an opt-in persistent `whisper-stream` session with fixed executable/model/DirectSound arguments.
+  Start, pause, resume and stop are separate no-argument trusted IPC capabilities; stdout is bounded,
+  duplicate transcripts are suppressed and no `--save-audio` path exists.
+- Made live microphone authority visible on the primary button and tray. Ultron ignores transcript events
+  while thinking/speaking, applies an echo guard before resuming and stops the process on explicit stop or exit.
+- Reduced perceived model latency by speaking each completed sentence while remaining tokens stream. The
+  spoken answer is still limited to the fixed `qwen3:8b`, 120 tokens and the last eight messages.
+- Installed portable uv/Python/Qwen3-TTS strictly below `Eclipse AI Runtime` and verified CUDA on the RTX 4060 Ti.
+  Evidence rejected Qwen3-TTS 0.6B as a real-time default: warm 2.96-second audio required 13.21 seconds;
+  the first 9.04-second sample required about 62 seconds. No Qwen TTS server is auto-started by the app.
+- Installed the official MIT Piper Windows runtime and two CC0 Russian voices. Voice files matched official
+  `voices.json` MD5 values; Microsoft Defender found no threats in the runtime. `denis-medium` was selected
+  for its lower measured median pitch and generated 5.39 seconds of audio in 0.67 seconds.
+- Added bounded Piper IPC: fixed relative model/espeak paths, UTF-8 stdin, memory-only WAV stdout, 400-character
+  input, 12 MiB output, 8-second timeout, one process, rate limit, RIFF/WAVE validation and cancellable fallback.
+  Windows SAPI remains a deterministic fallback when the E-drive runtime is absent.

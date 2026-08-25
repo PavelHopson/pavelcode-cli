@@ -73,7 +73,7 @@ test('Ultron Lab routes the abliterated model to a separate local endpoint witho
   assert.match(ai, /У тебя нет инструментов, shell, доступа к файлам, сети, секретам, установке или deployment/)
   assert.doesNotMatch(ai, /tools\s*:/)
   assert.match(settings, /Qwen 3 8B · голосовой профиль/)
-  assert.match(settings, /Нет фоновой записи и wake word/)
+  assert.match(settings, /Живой режим включается только вручную/)
   assert.doesNotMatch(settings, /HuiHui|Lab-профиль/)
   assert.match(main, /OLLAMA_HOST: '127\.0\.0\.1:11435'/)
   assert.match(main, /OLLAMA_MODELS: labOllamaModels/)
@@ -81,6 +81,58 @@ test('Ultron Lab routes the abliterated model to a separate local endpoint witho
   assert.match(main, /spawn\(labOllamaExecutable, \['serve'\]/)
   assert.match(html, /connect-src[^;]*http:\/\/127\.0\.0\.1:11435/)
   assert.doesNotMatch(`${ai}\n${main}`, /0\.0\.0\.0:11435/)
+})
+
+test('Ultron live microphone remains explicit, local, bounded and cancellable', async () => {
+  const [main, preload, manager, conversation] = await Promise.all([
+    readText('dashboard/electron/main.cjs'),
+    readText('dashboard/electron/preload.cjs'),
+    readText('dashboard/electron/ultron-live-voice.cjs'),
+    readText('dashboard/src/components/UltronVoiceConversation.tsx'),
+  ])
+
+  assert.match(main, /registerVoiceControl\(VOICE_LIVE_START_CHANNEL, 'start'\)/)
+  assert.match(main, /registerVoiceControl\(VOICE_LIVE_STOP_CHANNEL, 'stop'\)/)
+  assert.match(main, /args\.length !== 0/)
+  assert.match(main, /isTrustedOperatorSender\(event\)/)
+  assert.match(preload, /startLive\(\)[\s\S]*ipcRenderer\.invoke\(VOICE_LIVE_START_CHANNEL\)/)
+  assert.match(preload, /stopLive\(\)[\s\S]*ipcRenderer\.invoke\(VOICE_LIVE_STOP_CHANNEL\)/)
+  assert.match(manager, /whisper-stream\.exe/)
+  assert.match(manager, /ggml-large-v3-turbo-q5_0\.bin/)
+  assert.match(manager, /shell: false/)
+  assert.match(manager, /MAX_STDOUT_BUFFER_BYTES = 128 \* 1024/)
+  assert.match(manager, /RESUME_ECHO_GUARD_MS = 1_800/)
+  assert.doesNotMatch(manager, /--save-audio|-sa\b/)
+  assert.match(conversation, /Включить живой разговор/)
+  assert.match(conversation, /stopLiveLocal/)
+  assert.match(conversation, /pauseLiveLocal/)
+  assert.match(conversation, /аудио не сохраняется/)
+  assert.doesNotMatch(conversation, /setInterval|wake.?word/i)
+})
+
+test('Ultron fast TTS uses fixed Piper runtime with bounded trusted IPC and SAPI fallback', async () => {
+  const [main, preload, voice] = await Promise.all([
+    readText('dashboard/electron/main.cjs'),
+    readText('dashboard/electron/preload.cjs'),
+    readText('dashboard/src/lib/voice.ts'),
+  ])
+
+  assert.match(main, /PIPER_TTS_TEXT_LIMIT = 400/)
+  assert.match(main, /PIPER_TTS_OUTPUT_LIMIT_BYTES = 12 \* 1024 \* 1024/)
+  assert.match(main, /PIPER_TTS_TIMEOUT_MS = 8_000/)
+  assert.match(main, /piperTtsModelRelative = path\.join\('\.\.', '\.\.', 'voices'/)
+  assert.match(main, /'--espeak_data', path\.join\('\.', 'espeak-ng-data'\)/)
+  assert.match(main, /'--output_file', '-'/)
+  assert.match(main, /shell: false/)
+  assert.match(main, /isTrustedOperatorSender\(event\)/)
+  assert.match(main, /wav\.subarray\(0, 4\)\.toString\('ascii'\) === 'RIFF'/)
+  assert.doesNotMatch(main, /exec(?:File|Sync)?\s*\(/)
+  assert.match(preload, /synthesize\(text\)[\s\S]*ipcRenderer\.invoke\(VOICE_TTS_SYNTHESIZE_CHANNEL, text\)/)
+  assert.match(preload, /stopSpeech\(\)/)
+  assert.match(voice, /playFastLocalSpeech/)
+  assert.match(voice, /header\.startsWith\('RIFF'\)/)
+  assert.match(voice, /new SpeechSynthesisUtterance/)
+  assert.match(voice, /stopSpeech/)
 })
 
 test('Ultron command center exposes explicit safety, voice and accessible motion controls', async () => {
@@ -105,11 +157,11 @@ test('Ultron command center exposes explicit safety, voice and accessible motion
   assert.match(conversation, /listenOnceLocal/)
   assert.match(conversation, /sendMessage/)
   assert.match(conversation, /VOICE_MODEL_ID/)
-  assert.match(conversation, /messages\.slice\(-8\)/)
+  assert.match(conversation, /messagesRef\.current\.slice\(-8\)/)
   assert.match(conversation, /warmVoiceModel\(\)/)
-  assert.match(conversation, /maxTokens: 160, reasoningEffort: 'none'/)
-  assert.match(conversation, /speak\(assistantMessage\.content\)/)
-  assert.match(conversation, /Говорить с Альтроном/)
+  assert.match(conversation, /maxTokens: 120, reasoningEffort: 'none'/)
+  assert.match(conversation, /speak\(clean\)/)
+  assert.match(conversation, /Включить живой разговор/)
   assert.doesNotMatch(conversation, /<input|<textarea|createRecognition|webkitSpeechRecognition/)
   assert.match(room, /STOP активен/)
   assert.match(room, /aria-pressed=\{motionEnabled\}/)
@@ -121,11 +173,11 @@ test('Ultron command center exposes explicit safety, voice and accessible motion
   assert.match(core, /ultron-core__voice/)
   assert.match(avatar, /data-presence=\{presence\}/)
   assert.match(avatar, /ultron-avatar-presence__voice/)
-  assert.doesNotMatch(conversation, /setInterval|wake.?word|background.?listen/i)
+  assert.doesNotMatch(conversation, /setInterval|wake.?word/i)
   assert.match(voice, /45_000/)
   assert.match(voice, /Microsoft Pavel/)
   assert.match(voice, /ultron-voice-preferences-v1/)
-  assert.match(voice, /clamp\(preferences\.rate, 0\.9, 1\.4\)/)
+  assert.match(voice, /clamp\(preferences\.rate, 0\.95, 1\.12\)/)
   assert.match(voice, /voiceschanged/)
   assert.match(voice, /speechSynthesis\.cancel\(\)/)
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/)

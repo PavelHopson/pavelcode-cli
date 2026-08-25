@@ -5,6 +5,7 @@ const net = require('net');
 const { existsSync } = require('fs');
 const { ipcMain } = require('electron');
 const { pathToFileURL } = require('url');
+const { UltronLiveVoiceManager } = require('./ultron-live-voice.cjs');
 
 // The desktop product was renamed to Eclipse Ultron, but the existing local
 // Chromium profile remains the stable data boundary for sessions and settings.
@@ -16,8 +17,15 @@ let win = null;
 let tray = null;
 let safeOperatorExecutor = null;
 let labOllamaProcess = null;
+let liveVoiceManager = null;
 const EXECUTE_CHANNEL = 'sentinel:operator:execute';
 const VOICE_LISTEN_CHANNEL = 'sentinel:voice:listen-once';
+const VOICE_LIVE_START_CHANNEL = 'sentinel:voice:live-start';
+const VOICE_LIVE_STOP_CHANNEL = 'sentinel:voice:live-stop';
+const VOICE_LIVE_PAUSE_CHANNEL = 'sentinel:voice:live-pause';
+const VOICE_LIVE_RESUME_CHANNEL = 'sentinel:voice:live-resume';
+const VOICE_TTS_SYNTHESIZE_CHANNEL = 'sentinel:voice:tts-synthesize';
+const VOICE_TTS_STOP_CHANNEL = 'sentinel:voice:tts-stop';
 const VOICE_OUTPUT_LIMIT_BYTES = 8 * 1024;
 const VOICE_PROCESS_TIMEOUT_MS = 25_000;
 const VOICE_RATE_LIMIT_MS = 1_500;
@@ -25,6 +33,12 @@ const VOICE_MODEL_WARMUP_URL = 'http://127.0.0.1:11434/api/generate';
 const VOICE_MODEL_WARMUP_TIMEOUT_MS = 120_000;
 let voiceListenInFlight = false;
 let voiceLastStartedAt = 0;
+let piperTtsProcess = null;
+let piperTtsLastStartedAt = 0;
+const PIPER_TTS_TEXT_LIMIT = 400;
+const PIPER_TTS_OUTPUT_LIMIT_BYTES = 12 * 1024 * 1024;
+const PIPER_TTS_TIMEOUT_MS = 8_000;
+const PIPER_TTS_RATE_LIMIT_MS = 200;
 const operatorModuleUrl = pathToFileURL(
   path.resolve(__dirname, 'sentinel-safe-operator.mjs'),
 ).href;
@@ -52,6 +66,25 @@ const eclipseAiRuntimeRoot = process.env.ECLIPSE_AI_RUNTIME_DIR
   : path.join(eclipseProgramsRoot, 'Eclipse AI Runtime');
 const labOllamaExecutable = path.join(eclipseAiRuntimeRoot, 'ollama', 'ollama.exe');
 const labOllamaModels = path.join(eclipseAiRuntimeRoot, 'models', 'ollama');
+const piperTtsDirectory = path.join(eclipseAiRuntimeRoot, 'tts', 'piper', 'runtime', 'piper');
+const piperTtsExecutable = path.join(piperTtsDirectory, 'piper.exe');
+const piperTtsModelRelative = path.join('..', '..', 'voices', 'ru', 'ru_RU', 'denis', 'medium', 'ru_RU-denis-medium.onnx');
+
+function sendVoiceEvent(channel, payload) {
+  if (!win || win.isDestroyed() || win.webContents.isDestroyed()) return;
+  win.webContents.send(channel, payload);
+}
+
+function ensureLiveVoiceManager() {
+  if (!liveVoiceManager) {
+    liveVoiceManager = new UltronLiveVoiceManager({
+      runtimeRoot: eclipseAiRuntimeRoot,
+      sendEvent: sendVoiceEvent,
+      onStateChange: () => refreshTrayMenu(),
+    });
+  }
+  return liveVoiceManager;
+}
 
 function isLabOllamaListening() {
   return new Promise((resolve) => {
@@ -278,6 +311,9 @@ ipcMain.handle(VOICE_LISTEN_CHANNEL, async (event, ...args) => {
   if (voiceListenInFlight) {
     return { ok: false, error: { code: 'VOICE_BUSY', message: 'Распознавание уже выполняется.' } };
   }
+  if (liveVoiceManager?.isActive()) {
+    return { ok: false, error: { code: 'VOICE_LIVE_ACTIVE', message: 'Живой разговор уже использует микрофон.' } };
+  }
 
   const now = Date.now();
   if (now - voiceLastStartedAt < VOICE_RATE_LIMIT_MS) {
@@ -291,6 +327,131 @@ ipcMain.handle(VOICE_LISTEN_CHANNEL, async (event, ...args) => {
   } finally {
     voiceListenInFlight = false;
   }
+});
+
+function registerVoiceControl(channel, action) {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!isTrustedOperatorSender(event)) {
+      return { ok: false, error: { code: 'UNTRUSTED_SENDER', message: 'IPC sender is not trusted' } };
+    }
+    if (args.length !== 0) {
+      return { ok: false, error: { code: 'VOICE_INPUT_REJECTED', message: 'Голосовой канал не принимает параметры.' } };
+    }
+    if (action === 'start' && voiceListenInFlight) {
+      return { ok: false, error: { code: 'VOICE_BUSY', message: 'Дождитесь завершения текущего распознавания.' } };
+    }
+    return ensureLiveVoiceManager()[action]();
+  });
+}
+
+registerVoiceControl(VOICE_LIVE_START_CHANNEL, 'start');
+registerVoiceControl(VOICE_LIVE_STOP_CHANNEL, 'stop');
+registerVoiceControl(VOICE_LIVE_PAUSE_CHANNEL, 'pause');
+registerVoiceControl(VOICE_LIVE_RESUME_CHANNEL, 'resume');
+
+function normalizeTtsText(input) {
+  if (typeof input !== 'string') return '';
+  return input.replace(/\s+/g, ' ').trim();
+}
+
+function runPiperSynthesis(text) {
+  return new Promise((resolve) => {
+    let outputBytes = 0;
+    let stderrBytes = 0;
+    let settled = false;
+    const output = [];
+    const child = spawn(piperTtsExecutable, [
+      '--model', piperTtsModelRelative,
+      '--espeak_data', path.join('.', 'espeak-ng-data'),
+      '--output_file', '-',
+      '--length_scale', '0.94',
+      '--sentence_silence', '0.12',
+      '--quiet',
+    ], {
+      cwd: piperTtsDirectory,
+      windowsHide: true,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    piperTtsProcess = child;
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (piperTtsProcess === child) piperTtsProcess = null;
+      resolve(result);
+    };
+    const timeoutId = setTimeout(() => {
+      child.kill();
+      finish({ ok: false, error: { code: 'TTS_TIMEOUT', message: 'Быстрый локальный голос не успел ответить.' } });
+    }, PIPER_TTS_TIMEOUT_MS);
+
+    child.stdout.on('data', (chunk) => {
+      outputBytes += chunk.length;
+      if (outputBytes > PIPER_TTS_OUTPUT_LIMIT_BYTES) {
+        child.kill();
+        finish({ ok: false, error: { code: 'TTS_OUTPUT_LIMIT', message: 'Локальный голос превысил лимит аудио.' } });
+        return;
+      }
+      output.push(chunk);
+    });
+    child.stderr.on('data', (chunk) => {
+      stderrBytes += chunk.length;
+      if (stderrBytes > 4 * 1024) child.kill();
+    });
+    child.once('error', () => {
+      finish({ ok: false, error: { code: 'TTS_UNAVAILABLE', message: 'Быстрый локальный голос недоступен.' } });
+    });
+    child.once('close', (code) => {
+      if (settled) return;
+      const wav = Buffer.concat(output);
+      const validWav = code === 0
+        && wav.length > 44
+        && wav.subarray(0, 4).toString('ascii') === 'RIFF'
+        && wav.subarray(8, 12).toString('ascii') === 'WAVE';
+      if (!validWav) {
+        finish({ ok: false, error: { code: 'TTS_INVALID_AUDIO', message: 'Локальный голос вернул некорректное аудио.' } });
+        return;
+      }
+      finish({ ok: true, audio: new Uint8Array(wav), engine: 'piper-denis-medium' });
+    });
+
+    child.stdin.on('error', () => {});
+    child.stdin.end(`${text}\n`, 'utf8');
+  });
+}
+
+ipcMain.handle(VOICE_TTS_SYNTHESIZE_CHANNEL, async (event, ...args) => {
+  if (!isTrustedOperatorSender(event)) {
+    return { ok: false, error: { code: 'UNTRUSTED_SENDER', message: 'IPC sender is not trusted' } };
+  }
+  if (args.length !== 1) {
+    return { ok: false, error: { code: 'TTS_INPUT_REJECTED', message: 'Голосовой канал принимает только текст.' } };
+  }
+  const text = normalizeTtsText(args[0]);
+  if (!text || text.length > PIPER_TTS_TEXT_LIMIT) {
+    return { ok: false, error: { code: 'TTS_TEXT_LIMIT', message: 'Текст для голоса должен содержать от 1 до 400 символов.' } };
+  }
+  if (!existsSync(piperTtsExecutable)) {
+    return { ok: false, error: { code: 'TTS_RUNTIME_MISSING', message: 'Piper runtime не найден на диске E:.' } };
+  }
+  if (piperTtsProcess) {
+    return { ok: false, error: { code: 'TTS_BUSY', message: 'Локальный голос уже формирует реплику.' } };
+  }
+  const now = Date.now();
+  if (now - piperTtsLastStartedAt < PIPER_TTS_RATE_LIMIT_MS) {
+    return { ok: false, error: { code: 'TTS_RATE_LIMITED', message: 'Следующая реплика запускается слишком быстро.' } };
+  }
+  piperTtsLastStartedAt = now;
+  return runPiperSynthesis(text);
+});
+
+ipcMain.handle(VOICE_TTS_STOP_CHANNEL, (event, ...args) => {
+  if (!isTrustedOperatorSender(event) || args.length !== 0) return false;
+  if (piperTtsProcess && !piperTtsProcess.killed) piperTtsProcess.kill();
+  piperTtsProcess = null;
+  return true;
 });
 
 Menu.setApplicationMenu(null);
@@ -356,17 +517,29 @@ function createWindow() {
   }
 }
 
-function createTray() {
-  const icon = nativeImage.createFromPath(windowIconPath).resize({ width: 16, height: 16 });
-  tray = new Tray(icon);
-  tray.setToolTip('Eclipse Ultron');
-
+function refreshTrayMenu() {
+  if (!tray) return;
+  const liveActive = Boolean(liveVoiceManager?.isActive());
+  tray.setToolTip(liveActive ? 'Eclipse Ultron · микрофон включён' : 'Eclipse Ultron');
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Открыть', click: () => { win.show(); win.focus(); } },
+    {
+      label: liveActive ? 'Остановить живой разговор' : 'Включить живой разговор',
+      click: () => {
+        const manager = ensureLiveVoiceManager();
+        if (manager.isActive()) manager.stop(); else manager.start();
+      },
+    },
     { type: 'separator' },
     { label: 'Выход', click: () => { app.isQuitting = true; app.quit(); } },
   ]);
   tray.setContextMenu(contextMenu);
+}
+
+function createTray() {
+  const icon = nativeImage.createFromPath(windowIconPath).resize({ width: 16, height: 16 });
+  tray = new Tray(icon);
+  refreshTrayMenu();
   tray.on('click', () => { win.show(); win.focus(); });
 }
 
@@ -399,6 +572,10 @@ app.on('activate', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  liveVoiceManager?.dispose();
+  liveVoiceManager = null;
+  if (piperTtsProcess && !piperTtsProcess.killed) piperTtsProcess.kill();
+  piperTtsProcess = null;
   if (labOllamaProcess && !labOllamaProcess.killed) {
     labOllamaProcess.kill();
     labOllamaProcess = null;

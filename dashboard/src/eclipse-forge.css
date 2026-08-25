@@ -434,11 +434,21 @@ textarea {
 }
 
 .settings-dialog {
+  display: flex;
+  max-height: calc(100vh - 24px);
+  flex-direction: column;
   border-color: #29364d !important;
   border-radius: var(--ef-radius-lg) !important;
   background: #090d13 !important;
   box-shadow: 0 38px 110px -42px #000;
 }
+.settings-dialog > .p-5 {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.settings-dialog > :first-child,
+.settings-dialog > :last-child { flex: 0 0 auto; }
 
 .settings-title p {
   margin-top: 4px;

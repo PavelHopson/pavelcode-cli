@@ -3,11 +3,15 @@
 ## Voice-first Ultron — 2026-08-25
 
 - [x] remove the visible text Chat, session sidebar, status rail and floating contact dock from the primary desktop shell
-- [x] make the living Ultron avatar and one explicit `Говорить с Альтроном` action the central product surface
+- [x] make the living Ultron avatar and one explicit `Включить живой разговор` action the central product surface
 - [x] pin live conversation to local `qwen3:8b` so stored experimental model choices cannot slow or replace voice replies
 - [x] show the last recognized phrase and spoken answer without exposing a text composer
 - [x] keep Safe Operator as a separate secondary mode with dictation, plan, diff, approval, STOP and receipt
-- [x] preserve explicit one-shot microphone authority; keep wake word and background listening absent
+- [x] preserve one-shot capture and add an explicit cancellable live session; keep wake word, startup capture and standing authorization absent
+- [x] keep one persistent Whisper process during live mode, pause transcript delivery during TTS and suppress immediate echo/duplicates
+- [x] start speaking after the first complete generated sentence instead of waiting for the full model response
+- [x] replace the robotic SAPI default with bounded Piper Denis IPC; retain Windows TTS only as fallback
+- [x] install and benchmark Qwen3-TTS 0.6B on E:, then exclude it from real-time default after measured 13.21-second warm latency
 - [x] verify desktop normal-motion and mobile reduced-motion layouts with zero overflow and browser errors
 - [x] evaluate OrcaRouter and AEON Qwen3.8 27B variants against hardware, provenance and safety boundaries
 - [ ] benchmark the OrcaRouter Q4 candidate in isolated Lab before deciding whether it supersedes HuiHui
@@ -16,7 +20,7 @@
 
 - [x] introduce one shared `idle / listening / thinking / speaking / success / error` presence contract
 - [x] animate the avatar, launcher and Ultron Core from real product state instead of decorative timers
-- [x] add an explicit one-turn voice conversation: STT -> fixed fast voice model -> bounded TTS
+- [x] add both one-turn and explicit live conversation: persistent STT -> fixed fast voice model -> bounded TTS
 - [x] keep a separate dictation-only route for Operator review and editing
 - [x] add visible stop-speaking and global Motion controls; honor live Windows reduced-motion changes
 - [x] limit primary animation loops to compositor-friendly transform and opacity
@@ -24,7 +28,7 @@
 - [x] fix FIFINE USB microphone capture by pinning the trusted Whisper child to SDL DirectSound
 - [x] split Ultron Core voice UX into an obvious spoken question path and explicit operator dictation
 - [x] add a local TTS voice inventory, Russian voice selection, bounded speed control and testable preview
-- [ ] evaluate MOSS-TTS-Nano ONNX in an isolated E-drive runtime against the system Pavel baseline: Russian quality, first-audio latency, CPU/RAM use, license and rollback
+- [x] evaluate local TTS candidates against the system Pavel baseline and select Piper Denis for real-time latency; keep Qwen3-TTS as Studio/Lab evidence
 - [ ] evaluate compact always-on-top mode without enabling wake word or background listening
 
 ## Retired persistent contact experiment — 2026-08-25

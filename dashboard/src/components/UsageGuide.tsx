@@ -130,7 +130,7 @@ export function UsageGuide({
               <span className="usage-guide-step-number">01</span>
               <div>
                 <p className="usage-guide-step-title"><Settings2 size={15} /> Проверьте локальный контур</p>
-                <p>В настройках можно выбрать установленный русский голос, изменить скорость и сразу прослушать результат. По умолчанию выбран мужской Microsoft Pavel.</p>
+                <p>Основной голос — быстрый локальный Piper Denis. В настройках можно изменить темп, прослушать результат и выбрать резервный Windows-голос.</p>
                 <button type="button" className="usage-guide-action" onClick={onOpenSettings}>
                   Открыть настройки <ArrowRight size={13} />
                 </button>
@@ -140,7 +140,7 @@ export function UsageGuide({
               <span className="usage-guide-step-number">02</span>
               <div>
                 <p className="usage-guide-step-title"><Mic size={15} /> Поговорите с Альтроном</p>
-                <p>Нажмите «Говорить с Альтроном», произнесите одну фразу и дождитесь голосового ответа. Новая реплика — новое нажатие.</p>
+                <p>Нажмите «Включить живой разговор» один раз и говорите свободно. Альтрон временно приглушает микрофон, пока отвечает; остановка всегда доступна одной кнопкой и через tray.</p>
                 <button type="button" className="usage-guide-action" onClick={onOpenVoice}>
                   Открыть голос Альтрона <ArrowRight size={13} />
                 </button>
