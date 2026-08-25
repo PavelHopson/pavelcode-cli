@@ -1,321 +1,309 @@
-# Eclipse Hopson Sentinel
+<div align="center">
 
-> Локальный AI-оператор нового поколения для кода, терминала, автоматизации и голосового взаимодействия.
+<img src="docs/assets/ultron-hero.png" alt="Eclipse Ultron — локальный AI-оператор Eclipse Forge" width="100%" />
 
-`Eclipse Hopson Sentinel` — это не просто CLI для работы с моделями.  
-Это фундамент для личной операторской системы: локальной, расширяемой, ориентированной на код, voice-интерфейсы и безопасную автоматизацию.
+# Eclipse Ultron
 
-## Почему Sentinel
+### Локальный AI command center: голос → план → approval → действие → receipt
 
-`Sentinel` создаётся как практический AI-центр для разработчика и power-user:
+[![CI](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml)
+![Desktop](https://img.shields.io/badge/Desktop-Windows-111318?style=flat-square&logo=windows11&logoColor=F3F5F7)
+![Release](https://img.shields.io/badge/Ultron-1.2.0-8E1024?style=flat-square)
+![Runtime](https://img.shields.io/badge/Sentinel-0.1.7-15181D?style=flat-square)
+![Local first](https://img.shields.io/badge/data-local--first-45D89A?style=flat-square)
+![Policy](https://img.shields.io/badge/execution-human%20approved-F2C94C?style=flat-square)
 
-- работает как coding-agent для проектов и репозиториев
-- умеет жить в терминале, а не только в браузере
-- строится вокруг локального control flow, а не только облачного UX
-- получает собственный voice-layer, diagnostics, backup discipline и installer flow
-- объединяет рабочий TypeScript runtime и развивающийся Rust runtime
+**Eclipse Ultron** — пользовательское desktop-приложение Eclipse Forge.<br/>
+**Sentinel** — его совместимый runtime, CLI, IPC и набор инженерных контрактов.
 
-Если коротко, `Sentinel` — это шаг от “CLI к модели” к “локальному цифровому оператору”.
+[Возможности](#что-уже-работает) · [Архитектура](#архитектура) · [Быстрый старт](#быстрый-старт) · [Голос](#голосовая-связь) · [Безопасность](#модель-безопасности) · [Документация](#документация)
 
-## Что уже есть
+</div>
 
-### Sentinel Core
+---
 
-- TypeScript/Bun runtime для coding-agent сценариев
-- работа с кодом, файлами, shell и инструментами
-- bridge API для внешних клиентов
-- совместимость с OpenAI-compatible провайдерами и локальными моделями
+## Зачем существует Ultron
 
-### Sentinel Voice
+Большинство AI-интерфейсов скрывает слишком много: где обрабатываются данные, что именно
+собирается выполнить агент и как проверить результат. Eclipse Ultron строится вокруг другой
+модели взаимодействия:
 
-- отдельный voice client через `sentinel-voice`
-- безопасный локальный оператор через `sentinel-operator`: детерминированный план, ручное подтверждение, один read-only запуск и проверяемый receipt
-- локальный TTS на Windows
-- one-shot STT
-- terminal-safe push-to-talk
-- voice doctor для диагностики среды
+1. пользователь явно формулирует или произносит команду;
+2. Ultron показывает план и ожидаемый diff;
+3. человек подтверждает ограниченное действие;
+4. runtime выполняет один разрешённый handler;
+5. интерфейс возвращает проверяемый receipt.
 
-### Operator foundation
+Это не обещание автономного «управления всем компьютером». Текущий desktop-контур намеренно
+ограничен read-only навыками, ручным approval и локальным STOP.
 
-- persistent bridge sessions
-- deterministic config health audit
-- локальные snapshot backups
-- restore flow для ключевых Sentinel surfaces
-- первый Windows installer flow с `DryRun`
+## Что уже работает
 
-## Для кого этот проект
+| Поверхность | Что даёт | Текущая граница |
+| --- | --- | --- |
+| **Ultron Core** | command room с plan, diff, approval и receipt | три фиксированных read-only handler |
+| **Постоянная связь** | видимый avatar-dock на любом экране | микрофон запускается только по нажатию |
+| **Локальный голос** | one-shot STT через CUDA Whisper | до 12 секунд, без фоновой записи |
+| **AI Chat** | локальные и OpenAI-compatible модели | voice-текст сначала попадает в composer |
+| **Ultron Lab** | изолированный 27B experimental chat | без tools, shell, filesystem, network и execute |
+| **Sentinel CLI** | coding-agent, provider routing, bridge и MCP contracts | расширенные права зависят от явной конфигурации |
+| **Office bridge** | подписанные локальные события для Eclipse Chat | opt-in, bounded payloads, replay protection |
+| **Windows Doctor** | read-only security posture audit | диагностика без автоматического remediation |
 
-- для разработчиков, которым нужен локальный AI-ассистент для кода
-- для тех, кто хочет собрать собственный аналог Claude Code / Jarvis-style operator
-- для power-user, которым нужен voice + terminal + automation stack
-- для тех, кто хочет контролировать стек, а не только пользоваться чужим SaaS UI
+<p align="center">
+  <img src="docs/assets/ultron-command-center.png" alt="Eclipse Ultron command center с постоянной голосовой связью" width="100%" />
+</p>
 
-## Ключевые сценарии
+## Голосовая связь
 
-### 1. Coding agent
+<table>
+  <tr>
+    <td width="170" align="center">
+      <img src="dashboard/public/brand/ultron-avatar.png" alt="Оригинальный avatar Eclipse Ultron" width="136" />
+    </td>
+    <td>
+      <strong>Альтрон остаётся доступен на любой рабочей поверхности.</strong><br/><br/>
+      Постоянная кнопка открывает компактный contact panel: можно произнести фразу,
+      перейти в Chat или открыть Ultron Core. Голос не отправляется в облако и не запускается
+      автоматически. Распознанный текст появляется в поле Chat, где его можно проверить,
+      исправить и только потом отправить.
+    </td>
+  </tr>
+</table>
 
-`Sentinel` может быть базой для повседневной работы с проектами:
+Локальный voice pipeline:
 
-- разбор репозиториев
-- работа с файлами и shell
-- маршрутизация в облачные и локальные модели
-- build/debug/operator workflow из терминала
+```text
+explicit click
+    └─> trusted Electron IPC (без renderer-параметров)
+          └─> whisper.cpp + large-v3-turbo-q5_0
+                └─> transcript in memory
+                      └─> Chat composer for human review
+```
 
-### 2. Voice operator
+- один STT process одновременно;
+- фиксированный timeout и rate limit;
+- bounded JSON output;
+- аудио и транскрипт не сохраняются;
+- wake word и background listening выключены.
 
-`Sentinel Voice` — это ранний, но уже реальный шаг к локальному голосовому ассистенту:
-
-- озвучивание ответов
-- голосовой ввод
-- push-to-talk режим
-- подготовка к desktop shell и wake-word архитектуре
-
-### 3. Safe local automation
-
-`Sentinel` постепенно получает не только agent-функции, но и инженерную дисциплину:
-
-- backup перед изменениями
-- config health scoring
-- voice diagnostics
-- read-only Windows security posture audit
-- session persistence
+Подробности: [Eclipse Ultron Local AI Runtime](docs/ultron-local-ai-runtime.md).
 
 ## Архитектура
 
 ```mermaid
 flowchart LR
-    A["User"] --> B["Sentinel Voice"]
-    A --> C["Sentinel Core CLI"]
-    B --> D["Sentinel Bridge"]
-    D --> C
-    C --> E["TypeScript Runtime"]
-    C --> F["Rust Runtime"]
-    E --> G["Files / Shell / Tools / MCP"]
-    F --> G
-    C --> H["Cloud Models"]
-    C --> I["Local Models"]
+    U["Пользователь"] --> D["Eclipse Ultron Desktop"]
+    U --> C["Sentinel CLI"]
+
+    subgraph Desktop["Desktop control plane"]
+      D --> V["Local Voice IPC"]
+      D --> R["Safe Operator"]
+      D --> H["AI Chat"]
+      R --> P["Plan → Diff → Approval"]
+      P --> X["One-shot handler"]
+      X --> Q["Receipt"]
+    end
+
+    subgraph Runtime["Sentinel runtime"]
+      C --> B["Local Bridge"]
+      B --> T["TypeScript runtime"]
+      B --> RS["Rust runtime · R&D"]
+      T --> MCP["Tools / MCP / Providers"]
+    end
+
+    V --> W["Whisper · loopback/local"]
+    H --> O["Primary Ollama · 127.0.0.1:11434"]
+    H --> L["Ultron Lab · 127.0.0.1:11435"]
+    D -. signed opt-in events .-> E["Eclipse Chat Office Core"]
 ```
 
-## Текущая структура платформы
+### Принцип разделения
 
-| Слой | Назначение | Статус |
-| --- | --- | --- |
-| `Sentinel Core` | основной coding-agent runtime | рабочая база |
-| `Sentinel Bridge` | localhost API для voice и desktop клиентов | уже используется |
-| `Sentinel Voice` | voice client, TTS, STT, PTT | MVP |
-| `Rust Runtime` | next-generation engine | в развитии |
-| `Config Health / Backups` | reliability и operator safety | уже встроены |
+- **Ultron** отвечает за понятный desktop UX и видимые состояния.
+- **Sentinel** сохраняет стабильные CLI, storage и IPC-контракты.
+- **Policy Gate** определяет полномочия; модель не может расширить их текстовым ответом.
+- **Local AI Runtime** хранится отдельно от Git и installer: бинарники и веса не попадают в репозиторий.
+
+## Модель безопасности
+
+| Контроль | Реализация |
+| --- | --- |
+| Human approval | execute недоступен до preview плана и явного подтверждения |
+| One-shot permission | approval сгорает после одного результата |
+| Kill switch | STOP включён по умолчанию и блокирует execute |
+| Voice privacy | только явный one-shot capture; без background recording |
+| Renderer boundary | fixed IPC channel, zero user-controlled process arguments |
+| Process safety | `spawn`, `shell: false`, timeout, output limit, one in-flight process |
+| Local endpoints | Ollama profiles слушают только loopback |
+| Lab isolation | abliterated model получает chat completion, но не tools |
+| Office transport | bounded signed events, nonce/replay protection, explicit opt-in |
+| Browser boundary | read-only worker требует отдельной изоляции и allowlist |
+
+> Ответ любой модели считается недоверенным текстом. Наличие локальной модели не превращает
+> её в policy engine и не даёт прав на shell, secrets, install, deploy или изменение файлов.
+
+## Локальные модели: честный профиль
+
+| Профиль | Endpoint | Назначение | Default |
+| --- | --- | --- | --- |
+| `qwen3:8b` | `127.0.0.1:11434` | быстрый ежедневный Chat | да |
+| `huihui_ai/qwen3.8-abliterated:27b` | `127.0.0.1:11435` | изолированный Lab-эксперимент | нет |
+
+Измерение 27B Q4_K_M на RTX 4060 Ti 16 GiB / 64 GiB RAM, `num_ctx=8192`, `think=false`:
+
+| Режим | Load | Generation | Total |
+| --- | ---: | ---: | ---: |
+| cold start | 233.3 s | 8.2 tok/s | 254.56 s |
+| warm request | 0 s | 6.98 tok/s | 5.07 s |
+
+Практический вывод: 27B работает, но почти четырёхминутный cold start исключает её из
+default-профиля. Она остаётся opt-in Lab-моделью без инструментов; для повседневного диалога
+разумнее `qwen3:8b`.
 
 ## Быстрый старт
 
-### Вариант 1. Установщик для Windows
+### Desktop development
 
-Из локальной копии репозитория:
+Требования: Windows 10/11, Node.js 20+, npm. Для локального голоса нужен отдельно
+подготовленный [Eclipse AI Runtime](docs/ultron-local-ai-runtime.md).
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install-sentinel-windows.ps1 -DryRun
-powershell -ExecutionPolicy Bypass -File .\scripts\install-sentinel-windows.ps1
+cd dashboard
+npm ci
+npm run dev
 ```
 
-### Вариант 2. Запуск из репозитория
+Electron development:
 
 ```powershell
-bun install
+cd dashboard
+npm run electron:dev
+```
+
+Production build и локальный NSIS installer:
+
+```powershell
+cd dashboard
+npm run electron:build
+```
+
+Готовый файл появляется в `dashboard/release/`. Текущий installer предназначен для
+внутреннего тестирования: публичное распространение заблокировано до code signing и
+provenance review.
+
+### Sentinel Core
+
+Требования: Bun 1.3.12+, Node.js 20+.
+
+```powershell
+bun install --frozen-lockfile
 bun run build
-node .\bin\sentinel
+node .\bin\sentinel --version
 ```
 
-### Вариант 3. Голосовой клиент
+Диагностика среды:
 
 ```powershell
-node .\bin\sentinel-voice --list-voices
-node .\bin\sentinel-voice --stt --ptt --speak --voice Russian
+bun run doctor:runtime
+bun run doctor:windows
 ```
 
-## Настройка моделей
+## Проверки качества
 
-### OpenAI-compatible
+Desktop:
 
 ```powershell
-$env:CLAUDE_CODE_USE_OPENAI="1"
-$env:OPENAI_API_KEY="sk-your-key-here"
-$env:OPENAI_MODEL="gpt-4o"
-sentinel
+cd dashboard
+npm run lint
+npm run build
+npm audit
 ```
 
-### Ollama
+Focused security/UX contracts:
 
 ```powershell
-$env:CLAUDE_CODE_USE_OPENAI=”1”
-$env:OPENAI_BASE_URL=”http://localhost:11434/v1”
-$env:OPENAI_MODEL=”qwen2.5-coder:7b”
-sentinel
+node --test scripts/dashboard-security.test.mjs
+node --test scripts/dashboard-operator-security.test.mjs
+node --test scripts/dashboard-ultron-security.test.mjs
+node --test scripts/dashboard-branding.test.mjs
+node --test scripts/dashboard-usage-guide.test.mjs
 ```
 
-### ClawRouter (авто-роутинг 55+ моделей)
+Runtime:
 
 ```powershell
-# npx @blockrun/clawrouter  ← запустить отдельно
-$env:CLAUDE_CODE_USE_OPENAI=”1”
-$env:OPENAI_BASE_URL=”http://localhost:8402/v1”
-$env:OPENAI_API_KEY=”x402”
-$env:OPENAI_MODEL=”blockrun/auto”
-sentinel
+bun test
+bun run typecheck:supported
+bun run typecheck:debt
+bun run smoke
 ```
 
-### MetaClaw (авто-скиллы из сессий)
+CI выполняет Bun build/tests, supported-contract typecheck, inherited-debt guard, Python
+provider tests и Windows Doctor self-test.
 
-```powershell
-# metaclaw start  ← запустить отдельно
-$env:CLAUDE_CODE_USE_OPENAI=”1”
-$env:OPENAI_BASE_URL=”http://127.0.0.1:30000/v1”
-$env:OPENAI_API_KEY=”metaclaw”
-$env:OPENAI_MODEL=”your-model-id”
-sentinel
+## Структура репозитория
+
+```text
+eclipse-hopson-sentinel/
+├── dashboard/              # Eclipse Ultron · React + Electron + NSIS
+│   ├── electron/           # trusted main/preload и Safe Operator IPC
+│   ├── src/                # Chat, Ultron Core, contact dock, Settings
+│   └── public/brand/       # first-party Ultron visual assets
+├── src/                    # Sentinel TypeScript runtime
+├── rust/                   # next-generation runtime track
+├── bin/                    # sentinel / voice / operator entrypoints
+├── office/                 # Eclipse Chat Office event bridge
+├── scripts/                # doctors, security gates, build and voice adapters
+└── docs/                   # contracts, ADR, setup, roadmap and engineering log
 ```
-
-> Подробнее обо всех интеграциях: [docs/sentinel-integrations.md](docs/sentinel-integrations.md)
-
-### Безопасные MCP-пресеты
-
-Sentinel умеет добавить три проверенных MCP-интеграции с ограниченными настройками по умолчанию:
-
-```powershell
-# Документация библиотек. Работает без ключа; ключ можно настроить отдельно для повышенных лимитов.
-sentinel mcp add-preset context7 --scope project
-
-# Доступ только к одной указанной папке. Не передавайте домашнюю папку или весь диск.
-sentinel mcp add-preset filesystem --path . --scope project
-
-# Только чтение GitHub. Токен не записывается в конфиг.
-$env:GITHUB_PERSONAL_ACCESS_TOKEN="github_pat_your_fine_grained_token"
-sentinel mcp add-preset github-readonly --scope project
-
-sentinel mcp doctor --config-only
-```
-
-Все presets закрепляют версии, GitHub запускается в read-only + lockdown режиме, а Filesystem требует
-одну существующую allowed directory. Перед первым использованием проверьте список и описания tools:
-MCP metadata считается недоверенным вводом даже для официального сервера.
-
-### Изолированный browser read worker
-
-`BrowserRead` появляется в списке tools только при полной fail-closed конфигурации. Обычный
-`WebFetch` остаётся первым способом чтения; browser нужен лишь для публичной JS-heavy страницы.
-Sentinel не устанавливает Camofox и не запускает его на основной машине.
-
-Обязательная граница запуска:
-
-```powershell
-$env:SENTINEL_CAMOFOX_ISOLATED="true"              # отдельный container/VM без workspace и secrets
-$env:CAMOFOX_CRASH_REPORT_ENABLED="false"         # telemetry off в worker
-$env:SENTINEL_CAMOFOX_PERSISTENCE_DISABLED="true" # persistence plugin disabled in camofox.config.json
-$env:CAMOFOX_ACCESS_KEY="32+ random characters"
-$env:SENTINEL_CAMOFOX_ENDPOINT="http://127.0.0.1:9377"
-$env:SENTINEL_BROWSER_ALLOWED_DOMAINS="docs.example.com,example.com"
-sentinel
-```
-
-До запуска удалите/выключите upstream persistence plugin в `camofox.config.json`: attestation env
-не меняет конфиг автоматически, а заставляет оператора подтвердить эту границу. Tool создаёт
-одноразовую вкладку, читает accessibility snapshot и закрывает session. Он не
-экспонирует click, type, cookie import, downloads, payment, publish или account changes.
-Все URL до и после navigation проходят allowlist, а содержимое страницы возвращается с явной
-меткой `UNTRUSTED WEB CONTENT`. DNS/public-only egress всё равно должен ограничиваться на уровне
-контейнера: application allowlist не заменяет network sandbox.
-
-## Почему это сильнее обычного “ещё одного AI CLI”
-
-- у проекта есть не только runtime, но и operator-архитектура
-- voice-stack развивается как часть системы, а не как отдельная игрушка
-- bridge, diagnostics, backups и installer уже закладывают product discipline
-- проект строится как самостоятельный бренд `Eclipse Hopson`, а не как временный форк
 
 ## Документация
 
-- [Расширенная настройка](docs/advanced-setup.md)
-- [Быстрый старт для Windows](docs/quick-start-windows.md)
-- [Быстрый старт для macOS / Linux](docs/quick-start-mac-linux.md)
-- [Гибридная архитектура](docs/hybrid-architecture.md)
-- [Установщик для Windows](docs/windows-installer.md)
-- [Sentinel Bridge API](docs/sentinel-bridge.md)
-- [Sentinel Voice MVP](docs/sentinel-voice-mvp.md)
-- [Sentinel Safe Operator](docs/sentinel-safe-operator.md)
-- [Sentinel Config Health](docs/sentinel-config-health.md)
-- [Sentinel Windows Doctor](docs/sentinel-windows-doctor.md)
-- [Kimi K3 benchmark track](docs/sentinel-kimi-k3-benchmark.md)
-- [Sentinel Backups](docs/sentinel-backups.md)
-- [Инженерный журнал](docs/sentinel-engineering-log.md)
-- [Master Roadmap Sentinel](docs/sentinel-roadmap.md)
-- [План голосовой архитектуры](docs/sentinel-voice-plan.md)
+| Раздел | Документ |
+| --- | --- |
+| Первый запуск | [Windows quick start](docs/quick-start-windows.md) |
+| Установщик | [Windows installer](docs/windows-installer.md) |
+| Локальный голос и модели | [Ultron Local AI Runtime](docs/ultron-local-ai-runtime.md) |
+| Safe Operator | [Operator contract](docs/sentinel-safe-operator.md) |
+| Voice architecture | [Voice plan](docs/sentinel-voice-plan.md) |
+| Bridge API | [Sentinel Bridge](docs/sentinel-bridge.md) |
+| Office Core | [Office bridge](docs/sentinel-office-bridge.md) |
+| Конфигурация | [Config Health](docs/sentinel-config-health.md) |
+| Диагностика Windows | [Windows Doctor](docs/sentinel-windows-doctor.md) |
+| Архитектурные решения | [Hybrid architecture](docs/hybrid-architecture.md) |
+| План развития | [Sentinel roadmap](docs/sentinel-roadmap.md) |
+| Изменения | [Engineering log](docs/sentinel-engineering-log.md) |
 
-## Зрелость проекта
+## Ближайший roadmap
 
-Сейчас `Sentinel` уже выглядит как сильная инженерная база, но ещё не как полностью отполированный массовый продукт.
+- signed Windows releases и проверяемые update artifacts;
+- cancellable voice session и явный retry без фонового listening;
+- компактный always-on-top contact mode;
+- локальная инвентаризация моделей с безопасным выбором default;
+- новые capabilities только как отдельные least-privilege contracts с preview и rollback;
+- production credential lifecycle для opt-in Eclipse Chat Office bridge.
 
-Что уже хорошо:
+Актуальный источник истины: [docs/sentinel-roadmap.md](docs/sentinel-roadmap.md).
 
-- сильная core-основа
-- voice MVP
-- safety/disciplined tooling
-- собственный installer flow
+## Статус и происхождение
 
-Что ещё развивается:
+Проект находится в активной разработке и пока не является публичным массовым дистрибутивом.
+Desktop-приложение и Eclipse-контракты развиваются как first-party слой, но исходный CLI-код
+имеет смешанное происхождение. До фиксации точных upstream SHA и юридической проверки:
 
-- полный green-path installer
-- continuous voice mode
-- wake word
-- desktop shell
-- build hardening и release hardening
+- npm package остаётся `private`;
+- публичная публикация и продажа дистрибутива запрещены;
+- unsigned installer используется только локально;
+- условия определяются [LICENSE](LICENSE) и [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## Стратегическое направление
+Security issues следует сообщать по процедуре из [SECURITY.md](SECURITY.md), не через
+публичный issue с чувствительными деталями.
 
-Следующий уровень для `Eclipse Hopson Sentinel`:
+---
 
-- довести установку до “установил и пользуешься”
-- сделать desktop presence
-- укрепить voice interaction
-- развить operator workflows
-- постепенно довести систему до уровня полноценного локального цифрового оператора
+<div align="center">
 
-## Важно
+**Eclipse Forge · инженерные системы, в которых действие видно до выполнения**
 
-- переменные `CLAUDE_CODE_*` пока сохранены для совместимости с унаследованным runtime
-- часть внутренних имен из прежних upstream-слоёв всё ещё сохраняется для стабильности
-- для полного локального build/install сейчас по-прежнему нужен `Bun`
-
-## Лицензия
-
-Репозиторий пока не готов к публичному распространению как MIT-пакет.
-Собственные изменения Eclipse Hopson доступны на условиях MIT только там,
-где это не конфликтует с правами на импортированные компоненты. Базовый
-CLI-слой имеет неразрешённое смешанное происхождение; npm publish отключён
-до фиксации точных upstream commit SHA и юридической проверки.
-
-Подробности: [LICENSE](LICENSE) и
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-## Offline Spec Gate verification
-
-Sentinel can verify an approved eclipse.spec-gate.v1 artifact without network access or command execution.
-
-Command: sentinel spec verify --spec PATH_TO_SPEC_JSON --workspace PATH_TO_REPOSITORY
-
-Add --json to receive the machine-readable eclipse.spec-verification.v1 report. The verifier
-rejects policy escalation, stage drift, path traversal, .git access, symlinks and missing evidence.
-It only hashes local evidence files. A PASS confirms artifact shape and evidence presence; it does
-not prove behavior and does not authorize implementation, shell, GitHub or deployment.
-
-## Eclipse Forge visual contract
-
-Sentinel uses the local `eclipse-forge.visual-system.v1` snapshot in the `operational` profile. Its TUI maps the shared signal-blue, warm-gold, text, muted and status colors without adding animation loops or weakening terminal readability.
-
-
-## Dependency hardening — 2026-08-13
-
-- Updated the command parser, network, WebSocket, MCP, Anthropic SDK and Firecrawl dependency surfaces to fixed releases.
-- Added explicit transitive overrides for gRPC, Hono, URL/XML parsing, protobuf and UUID packages where upstream ranges otherwise retained known Critical/High advisories.
-- Provider SDKs and the OpenTelemetry stack are version-aligned, and the post-remediation Bun audit reports zero advisories.
-- Dependency lifecycle scripts remain blocked by Bun; no newly downloaded install script was trusted or executed.
-- Build, CLI smoke, distribution guard, Windows Doctor, all 216 Bun tests and all 44 Python provider tests pass. CI strictly typechecks maintained Eclipse contracts and rejects growth beyond the documented platform-specific inherited full-program baseline (3,995 diagnostics on Windows; 4,291 on Linux CI).
-
-The dashboard now declares the same `operational` profile explicitly: flat task surfaces, a single signal line and color-only interaction feedback. Production build passes; no scanning, provider, secret or authorization behavior changed.
+</div>
