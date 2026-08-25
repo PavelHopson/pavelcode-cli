@@ -20,18 +20,20 @@ import { executeOperatorPlan, getOperatorTransport, type OperatorReceipt } from 
 import { isLocalSTTSupported, isTTSSupported, listenOnceLocal, speak, stopSpeaking } from '../lib/voice';
 import { buildVoicePlan, VOICE_SKILL_ALLOWLIST, type VoicePlan, type VoiceSkillId } from '../lib/voiceCommandPolicy';
 import { UltronCore, type UltronCoreState } from './UltronCore';
+import { type UltronPresenceState } from '../lib/ultronPresence';
 
 type Stage = 'command' | 'plan' | 'approved' | 'executing' | 'receipt' | 'error';
 
-const MOTION_STORAGE_KEY = 'ultron-motion-enabled-v1';
 const FLOW_STAGES = ['Команда', 'План', 'Подтверждение', 'Receipt'];
 
-function readMotionPreference() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-  return localStorage.getItem(MOTION_STORAGE_KEY) !== '0';
+interface VoiceCommandRoomProps {
+  motionEnabled: boolean;
+  motionLocked: boolean;
+  onMotionChange: () => void;
+  onPresenceChange: (state: UltronPresenceState) => void;
 }
 
-export function VoiceCommandRoom() {
+export function VoiceCommandRoom({ motionEnabled, motionLocked, onMotionChange, onPresenceChange }: VoiceCommandRoomProps) {
   const [skillId, setSkillId] = useState<VoiceSkillId>('workspace.status');
   const [command, setCommand] = useState('Покажи безопасный статус рабочего места');
   const [plan, setPlan] = useState<VoicePlan | null>(null);
@@ -44,18 +46,21 @@ export function VoiceCommandRoom() {
   const [voiceConfidence, setVoiceConfidence] = useState<number | null>(null);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
-  const [motionEnabled, setMotionEnabled] = useState(readMotionPreference);
   const transport = getOperatorTransport();
   const localVoiceAvailable = isLocalSTTSupported();
   const selectedSkill = useMemo(() => VOICE_SKILL_ALLOWLIST.find((skill) => skill.id === skillId)!, [skillId]);
 
-  useEffect(() => () => stopSpeaking(), []);
+  useEffect(() => () => {
+    stopSpeaking();
+    onPresenceChange('idle');
+  }, [onPresenceChange]);
 
   const clearRun = () => {
     stopSpeaking();
     setPlan(null);
     setReceipt(null);
     setError('');
+    setVoiceError('');
     setApprovedAt(null);
     setSpeaking(false);
     setKillSwitch(true);
@@ -123,25 +128,38 @@ export function VoiceCommandRoom() {
     }
   };
 
-  const setMotion = () => {
-    const next = !motionEnabled;
-    setMotionEnabled(next);
-    localStorage.setItem(MOTION_STORAGE_KEY, next ? '1' : '0');
-  };
-
   const coreState: UltronCoreState = listening
     ? 'listening'
     : speaking
       ? 'speaking'
+      : voiceError
+        ? 'blocked'
       : stage === 'executing'
         ? 'executing'
         : stage === 'error'
           ? 'blocked'
           : stage === 'receipt'
             ? 'success'
-            : stage === 'plan' || stage === 'approved'
-              ? 'approval'
+            : stage === 'plan'
+              ? 'planning'
+              : stage === 'approved'
+                ? 'approval'
               : 'idle';
+
+  useEffect(() => {
+    const presenceState: UltronPresenceState = coreState === 'listening'
+      ? 'listening'
+      : coreState === 'speaking'
+        ? 'speaking'
+        : coreState === 'planning' || coreState === 'approval' || coreState === 'executing'
+          ? 'thinking'
+          : coreState === 'success'
+            ? 'success'
+            : coreState === 'blocked'
+              ? 'error'
+              : 'idle';
+    onPresenceChange(presenceState);
+  }, [coreState, onPresenceChange]);
 
   const currentStep = stage === 'command' ? 0
     : stage === 'plan' ? 1
@@ -157,9 +175,9 @@ export function VoiceCommandRoom() {
           <p>Одна команда. Видимый план. Ручное разрешение. Проверяемый результат.</p>
         </div>
         <div className="ultron-room__controls">
-          <button className="motion-switch" type="button" aria-pressed={motionEnabled} onClick={setMotion}>
+          <button className="motion-switch" type="button" aria-pressed={motionEnabled} disabled={motionLocked} onClick={onMotionChange}>
             <Waves size={15} />
-            <span><strong>Motion {motionEnabled ? 'ON' : 'OFF'}</strong><small>Анимация ядра</small></span>
+            <span><strong>Motion {motionEnabled ? 'ON' : 'OFF'}</strong><small>{motionLocked ? 'Отключено в Windows' : 'Анимация ядра'}</small></span>
           </button>
           <button
             className={`kill-switch ${killSwitch ? 'is-on' : ''}`}

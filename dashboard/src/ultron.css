@@ -75,6 +75,7 @@ body {
 .sentinel-shell[data-brand="ultron"] .eclipse-mark__crescent { fill: #08090c; stroke: var(--ultron-signal-soft); }
 .sentinel-shell[data-brand="ultron"] .eclipse-mark__core { fill: var(--ultron-silver); filter: drop-shadow(0 0 5px rgba(255, 48, 74, 0.78)); }
 .sentinel-shell[data-brand="ultron"] .eclipse-mark__signal { fill: var(--ultron-signal); }
+.sentinel-shell[data-brand="ultron"] .chat-empty__mark { width: 96px; height: 96px; border-color: transparent; background: transparent; box-shadow: none; }
 
 .sentinel-shell[data-brand="ultron"] .settings-dialog,
 .sentinel-shell[data-brand="ultron"] .usage-guide-dialog { border-color: var(--ultron-line-hot); box-shadow: 0 32px 100px -42px rgba(255, 48, 74, 0.42); }
@@ -85,6 +86,11 @@ body {
 .sentinel-shell[data-brand="ultron"] .usage-guide-action,
 .sentinel-shell[data-brand="ultron"] .usage-guide-primary { border-color: rgba(255, 48, 74, 0.32); color: var(--ultron-signal-soft); }
 .sentinel-shell[data-brand="ultron"] .usage-guide-primary { background: rgba(255, 48, 74, 0.1); }
+
+.surface-loading { height: 100%; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px; background: var(--ultron-bg); color: var(--ultron-muted); text-align: center; }
+.surface-loading > span { display: grid; gap: 4px; }
+.surface-loading strong { color: var(--ultron-silver-2); font-size: 12px; }
+.surface-loading small { font-size: 9px; }
 
 .ultron-room {
   min-height: 100%;
@@ -163,6 +169,7 @@ body {
 .ultron-hud-state small,
 .ultron-skills button small { color: var(--ultron-muted); font-size: 9px; font-weight: 400; }
 .motion-switch[aria-pressed="true"] { border-color: rgba(255, 48, 74, 0.32); color: var(--ultron-signal-soft); }
+.motion-switch:disabled { opacity: 0.58; cursor: not-allowed; }
 .kill-switch { min-width: 190px; border-color: rgba(69, 216, 154, 0.2); color: var(--ultron-success); }
 .kill-switch.is-on { border-color: rgba(255, 48, 74, 0.34); background: rgba(142, 16, 36, 0.12); color: var(--ultron-signal-soft); }
 .kill-switch:disabled { cursor: not-allowed; opacity: 0.68; }
@@ -283,7 +290,14 @@ body {
 .ultron-core__blade { fill: rgba(255, 48, 74, 0.08); stroke-width: 1.1; transform-box: fill-box; transform-origin: center; }
 .ultron-core__axis { stroke-width: 1; opacity: 0.48; }
 .ultron-core__eye { fill: #060609; stroke: var(--core-color); stroke-width: 1.5; }
-.ultron-core__eye-hot { fill: var(--ultron-silver); filter: drop-shadow(0 0 5px var(--core-color)); }
+.ultron-core__eye-hot { fill: var(--ultron-silver); filter: drop-shadow(0 0 5px var(--core-color)); transform-box: fill-box; transform-origin: center; }
+.ultron-core__signal { position: absolute; z-index: 1; width: 16%; height: 1px; background: linear-gradient(90deg, transparent, var(--core-color), transparent); opacity: 0.24; pointer-events: none; }
+.ultron-core__signal--north { top: 6%; left: 42%; }
+.ultron-core__signal--east { top: 50%; right: -1%; transform: rotate(90deg); }
+.ultron-core__signal--south { bottom: 6%; left: 42%; }
+.ultron-core__signal--west { top: 50%; left: -1%; transform: rotate(90deg); }
+.ultron-core__voice { position: absolute; z-index: 3; bottom: 7%; left: 50%; display: flex; align-items: center; gap: 3px; height: 18px; opacity: 0; transform: translate(-50%, 5px); pointer-events: none; }
+.ultron-core__voice i { width: 2px; height: 15px; border-radius: 2px; background: var(--core-color); opacity: 0.7; transform: scaleY(0.16); transform-origin: center; }
 .ultron-presence__copy { display: grid; justify-items: center; gap: 2px; text-align: center; }
 .ultron-presence__copy > span { color: var(--core-color); font: 700 10px ui-monospace, Consolas, monospace; letter-spacing: 0.15em; text-transform: uppercase; }
 .ultron-presence__copy strong { color: var(--ultron-muted); font-size: 9px; font-weight: 500; }
@@ -350,6 +364,22 @@ body {
   .ultron-room[data-motion="on"][data-stage="executing"] .ultron-core__scan { opacity: 0.72; animation: ultron-scan 1.7s ease-in-out infinite; }
   .ultron-room[data-motion="on"][data-stage="listening"] .voice-trigger svg,
   .ultron-room[data-motion="on"] .ultron-execution > svg { animation: ultron-turn 1s linear infinite; }
+  .ultron-room[data-motion="on"] .ultron-core__eye-hot { animation: ultron-eye-idle 3.8s ease-in-out infinite; }
+  .ultron-room[data-motion="on"][data-stage="listening"] .ultron-core__ring--middle,
+  .ultron-room[data-motion="on"][data-stage="speaking"] .ultron-core__ring--middle { animation-duration: 3.8s; }
+  .ultron-room[data-motion="on"][data-stage="planning"] .ultron-core__ring--outer,
+  .ultron-room[data-motion="on"][data-stage="executing"] .ultron-core__ring--outer { animation-duration: 5.5s; }
+  .ultron-room[data-motion="on"][data-stage="listening"] .ultron-core__signal,
+  .ultron-room[data-motion="on"][data-stage="planning"] .ultron-core__signal,
+  .ultron-room[data-motion="on"][data-stage="executing"] .ultron-core__signal,
+  .ultron-room[data-motion="on"][data-stage="speaking"] .ultron-core__signal { animation: ultron-signal 1.15s ease-in-out infinite; }
+  .ultron-room[data-motion="on"][data-stage="listening"] .ultron-core__voice,
+  .ultron-room[data-motion="on"][data-stage="speaking"] .ultron-core__voice { opacity: 1; transform: translate(-50%, 0); }
+  .ultron-room[data-motion="on"][data-stage="listening"] .ultron-core__voice i,
+  .ultron-room[data-motion="on"][data-stage="speaking"] .ultron-core__voice i { animation: ultron-core-voice 760ms ease-in-out infinite alternate; animation-delay: calc(var(--core-bar) * -82ms); }
+  .ultron-room[data-motion="on"][data-stage="listening"] .ultron-core__voice i { animation-duration: 1.05s; opacity: 0.48; }
+  .ultron-room[data-motion="on"][data-stage="success"] .ultron-core__aura { animation: ultron-core-success 720ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .ultron-room[data-motion="on"][data-stage="blocked"] .ultron-core__glyph { animation: ultron-core-blocked 360ms ease-in-out 2; }
 }
 
 @keyframes ultron-turn { to { transform: translate(-50%, -50%) rotate(360deg); } }
@@ -357,6 +387,11 @@ body {
 @keyframes ultron-breathe { 50% { opacity: 0.58; transform: translate(-50%, -50%) scale(1); } }
 @keyframes ultron-blade { to { transform: rotate(360deg); } }
 @keyframes ultron-scan { 0%, 100% { transform: translateY(-44px); } 50% { transform: translateY(44px); } }
+@keyframes ultron-eye-idle { 8%, 12% { opacity: 0.32; transform: scaleY(0.25); } 14%, 100% { opacity: 1; transform: scaleY(1); } }
+@keyframes ultron-signal { 50% { opacity: 0.78; } }
+@keyframes ultron-core-voice { from { transform: scaleY(0.16); } to { transform: scaleY(1); } }
+@keyframes ultron-core-success { 0% { opacity: 0.18; transform: translate(-50%, -50%) scale(0.72); } 55% { opacity: 0.72; transform: translate(-50%, -50%) scale(1.12); } 100% { opacity: 0.46; transform: translate(-50%, -50%) scale(0.92); } }
+@keyframes ultron-core-blocked { 25% { opacity: 0.64; transform: translateX(-2px); } 75% { opacity: 0.88; transform: translateX(2px); } }
 
 @media (max-width: 1250px) {
   .ultron-cockpit { grid-template-columns: minmax(190px, 0.62fr) minmax(430px, 1.38fr); }
@@ -422,7 +457,7 @@ body {
   min-width: 190px;
   min-height: 58px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 18px;
+  grid-template-columns: 46px minmax(0, 1fr) 18px;
   align-items: center;
   gap: 10px;
   padding: 7px 12px 7px 8px;
@@ -461,37 +496,34 @@ body {
 .ultron-contact__launcher-copy strong { font-size: 11px; line-height: 1.2; letter-spacing: 0.02em; }
 .ultron-contact__launcher-copy small { color: var(--ultron-muted); font-size: 9px; line-height: 1.25; }
 
-.ultron-avatar {
+.ultron-avatar-presence {
+  --avatar-state: var(--ultron-signal);
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  aspect-ratio: 1;
   flex: 0 0 auto;
-  overflow: hidden;
-  border: 1px solid rgba(255, 123, 137, 0.34);
-  border-radius: 11px;
-  background: #050507;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
 }
-
-.ultron-avatar img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  transform: scale(1.05);
-}
-
-.ultron-avatar > span {
-  position: absolute;
-  right: 3px;
-  bottom: 3px;
-  width: 7px;
-  height: 7px;
-  border: 2px solid #08090c;
-  border-radius: 50%;
-  background: var(--ultron-success);
-}
-
-.ultron-avatar--panel { width: 48px; height: 48px; border-radius: 12px; }
+.ultron-avatar-presence[data-presence="success"] { --avatar-state: var(--ultron-success); }
+.ultron-avatar-presence[data-presence="error"] { --avatar-state: #ff596c; }
+.ultron-avatar-presence--panel { width: 58px; }
+.ultron-avatar-presence--chat { width: 82px; }
+.ultron-avatar-presence__halo,
+.ultron-avatar-presence__orbit,
+.ultron-avatar-presence__portrait,
+.ultron-avatar-presence__voice { position: absolute; pointer-events: none; }
+.ultron-avatar-presence__halo { inset: 12%; border-radius: 50%; background: color-mix(in srgb, var(--avatar-state) 58%, transparent); filter: blur(12px); opacity: 0.18; transform: scale(0.8); }
+.ultron-avatar-presence__orbit { inset: 1%; border: 1px solid color-mix(in srgb, var(--avatar-state) 46%, transparent); border-radius: 50%; opacity: 0.42; }
+.ultron-avatar-presence__orbit--outer { border-style: dashed; }
+.ultron-avatar-presence__orbit--inner { inset: 8%; border-top-color: transparent; border-bottom-color: transparent; opacity: 0.68; }
+.ultron-avatar-presence__portrait { inset: 14%; overflow: hidden; border: 1px solid color-mix(in srgb, var(--avatar-state) 62%, transparent); border-radius: 28%; background: #050507; }
+.ultron-avatar-presence__portrait img { width: 100%; height: 100%; display: block; object-fit: cover; transform: scale(1.08); }
+.ultron-avatar-presence__scan { position: absolute; inset-inline: 0; top: 0; height: 24%; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--avatar-state) 36%, transparent), transparent); opacity: 0; transform: translateY(-110%); }
+.ultron-avatar-presence__aperture { position: absolute; left: 50%; bottom: 7%; width: 14%; aspect-ratio: 1; border-radius: 50%; background: var(--avatar-state); opacity: 0.78; transform: translateX(-50%) scale(0.72); }
+.ultron-avatar-presence__voice { z-index: 4; right: -4%; bottom: -2%; display: flex; align-items: center; gap: 1px; height: 16px; padding: 2px 3px; border: 1px solid color-mix(in srgb, var(--avatar-state) 42%, transparent); border-radius: 5px; background: rgba(7, 8, 11, 0.94); opacity: 0; transform: translateY(3px); }
+.ultron-avatar-presence__voice i { width: 1px; height: 9px; border-radius: 1px; background: var(--avatar-state); opacity: 0.78; transform: scaleY(0.18); transform-origin: center; }
 
 .ultron-contact__panel {
   width: min(360px, calc(100vw - 32px));
@@ -506,7 +538,7 @@ body {
 
 .ultron-contact__header {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 32px;
+  grid-template-columns: 58px minmax(0, 1fr) 32px;
   align-items: center;
   gap: 11px;
   padding: 14px;
@@ -542,7 +574,11 @@ body {
   color: var(--ultron-muted);
   font-size: 9px;
 }
-.ultron-contact__status[data-tone="listening"] { border-color: rgba(255, 48, 74, 0.34); color: var(--ultron-signal-soft); }
+.ultron-contact__status > span { min-width: 0; display: grid; gap: 2px; line-height: 1.35; }
+.ultron-contact__status strong { color: var(--ultron-silver-2); font-size: 9px; }
+.ultron-contact__status[data-tone="listening"],
+.ultron-contact__status[data-tone="thinking"],
+.ultron-contact__status[data-tone="speaking"] { border-color: rgba(255, 48, 74, 0.34); color: var(--ultron-signal-soft); }
 .ultron-contact__status[data-tone="success"] { border-color: rgba(69, 216, 154, 0.28); color: var(--ultron-success); }
 .ultron-contact__status[data-tone="error"] { border-color: rgba(255, 48, 74, 0.34); background: rgba(142, 16, 36, 0.08); color: var(--ultron-signal-soft); }
 
@@ -569,6 +605,23 @@ body {
 .ultron-contact__voice strong { font-size: 11px; }
 .ultron-contact__voice small { color: var(--ultron-muted); font-size: 8px; line-height: 1.35; }
 
+.ultron-contact__secondary,
+.ultron-contact__motion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--ultron-line);
+  background: transparent;
+  color: var(--ultron-muted);
+  cursor: pointer;
+}
+.ultron-contact__secondary { width: calc(100% - 28px); min-height: 32px; margin: 7px 14px 0; border-radius: 8px; font-size: 8px; }
+.ultron-contact__secondary:hover:not(:disabled),
+.ultron-contact__motion:hover:not(:disabled) { border-color: rgba(255, 48, 74, 0.32); color: var(--ultron-signal-soft); }
+.ultron-contact__secondary:disabled,
+.ultron-contact__motion:disabled { opacity: 0.46; cursor: not-allowed; }
+
 .ultron-contact__routes { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 9px 14px 12px; }
 .ultron-contact__routes button {
   min-width: 0;
@@ -590,13 +643,33 @@ body {
 .ultron-contact__routes button > span { min-width: 0; display: grid; gap: 2px; }
 .ultron-contact__routes strong { color: var(--ultron-silver-2); font-size: 9px; }
 .ultron-contact__routes small { overflow: hidden; color: var(--ultron-muted); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.ultron-contact__motion { width: calc(100% - 28px); min-height: 30px; margin: 0 14px 10px; border-radius: 7px; font-size: 8px; }
+.ultron-contact__motion[aria-pressed="true"] { border-color: rgba(69, 216, 154, 0.24); color: var(--ultron-success); }
 .ultron-contact footer { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-top: 1px solid var(--ultron-line); color: var(--ultron-muted); font-size: 8px; line-height: 1.45; }
 .ultron-contact footer svg { flex: 0 0 auto; color: var(--ultron-success); }
 
 @media (prefers-reduced-motion: no-preference) {
-  .ultron-contact__panel { animation: ultron-contact-enter 180ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
-  .ultron-contact[data-state="listening"] .ultron-avatar > span,
-  .ultron-contact[data-state="listening"] .ultron-contact__voice-icon { animation: ultron-contact-pulse 1.2s ease-in-out infinite; }
+  .ultron-contact[data-motion="on"] .ultron-contact__panel { animation: ultron-contact-enter 180ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+  .ultron-avatar-presence[data-motion="on"] .ultron-avatar-presence__portrait { animation: ultron-avatar-breathe 4.6s ease-in-out infinite; }
+  .ultron-avatar-presence[data-motion="on"] .ultron-avatar-presence__orbit--outer { animation: ultron-avatar-orbit 16s linear infinite; }
+  .ultron-avatar-presence[data-motion="on"] .ultron-avatar-presence__orbit--inner { animation: ultron-avatar-orbit-reverse 9s linear infinite; }
+  .ultron-avatar-presence[data-motion="on"] .ultron-avatar-presence__aperture { animation: ultron-avatar-eye 3.4s ease-in-out infinite; }
+  .ultron-avatar-presence[data-motion="on"] .ultron-avatar-presence__scan { animation: ultron-avatar-scan 4.8s ease-in-out infinite; }
+  .ultron-avatar-presence[data-motion="on"][data-presence="listening"] .ultron-avatar-presence__orbit--outer,
+  .ultron-avatar-presence[data-motion="on"][data-presence="speaking"] .ultron-avatar-presence__orbit--outer { animation-duration: 3.2s; }
+  .ultron-avatar-presence[data-motion="on"][data-presence="thinking"] .ultron-avatar-presence__orbit--outer { animation-duration: 2.4s; }
+  .ultron-avatar-presence[data-motion="on"][data-presence="thinking"] .ultron-avatar-presence__orbit--inner { animation-duration: 1.6s; }
+  .ultron-avatar-presence[data-motion="on"][data-presence="listening"] .ultron-avatar-presence__halo,
+  .ultron-avatar-presence[data-motion="on"][data-presence="thinking"] .ultron-avatar-presence__halo,
+  .ultron-avatar-presence[data-motion="on"][data-presence="speaking"] .ultron-avatar-presence__halo { animation: ultron-avatar-halo 1.25s ease-in-out infinite; }
+  .ultron-avatar-presence[data-motion="on"][data-presence="listening"] .ultron-avatar-presence__voice,
+  .ultron-avatar-presence[data-motion="on"][data-presence="speaking"] .ultron-avatar-presence__voice { opacity: 1; transform: translateY(0); }
+  .ultron-avatar-presence[data-motion="on"][data-presence="listening"] .ultron-avatar-presence__voice i,
+  .ultron-avatar-presence[data-motion="on"][data-presence="speaking"] .ultron-avatar-presence__voice i { animation: ultron-avatar-voice 680ms ease-in-out infinite alternate; animation-delay: calc(var(--voice-bar) * -74ms); }
+  .ultron-avatar-presence[data-motion="on"][data-presence="listening"] .ultron-avatar-presence__voice i { animation-duration: 940ms; opacity: 0.52; }
+  .ultron-avatar-presence[data-motion="on"][data-presence="success"] .ultron-avatar-presence__halo { animation: ultron-avatar-success 720ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .ultron-avatar-presence[data-motion="on"][data-presence="error"] .ultron-avatar-presence__portrait { animation: ultron-avatar-error 360ms ease-in-out 2; }
+  .ultron-contact[data-motion="on"][data-state="listening"] .ultron-contact__voice-icon { animation: ultron-contact-pulse 1.2s ease-in-out infinite; }
 }
 
 @keyframes ultron-contact-enter {
@@ -605,10 +678,20 @@ body {
 }
 
 @keyframes ultron-contact-pulse { 50% { opacity: 0.5; transform: scale(0.92); } }
+@keyframes ultron-avatar-breathe { 50% { opacity: 0.94; transform: scale(1.025); } }
+@keyframes ultron-avatar-orbit { to { transform: rotate(360deg); } }
+@keyframes ultron-avatar-orbit-reverse { to { transform: rotate(-360deg); } }
+@keyframes ultron-avatar-eye { 8%, 12% { opacity: 0.32; transform: translateX(-50%) scale(0.5, 0.2); } 15%, 100% { opacity: 0.82; transform: translateX(-50%) scale(0.78); } }
+@keyframes ultron-avatar-scan { 0%, 62% { opacity: 0; transform: translateY(-110%); } 72% { opacity: 0.5; } 94% { opacity: 0; transform: translateY(420%); } 100% { opacity: 0; transform: translateY(420%); } }
+@keyframes ultron-avatar-halo { 50% { opacity: 0.54; transform: scale(1.08); } }
+@keyframes ultron-avatar-voice { from { transform: scaleY(0.18); } to { transform: scaleY(1); } }
+@keyframes ultron-avatar-success { 0% { opacity: 0.16; transform: scale(0.7); } 55% { opacity: 0.72; transform: scale(1.2); } 100% { opacity: 0.26; transform: scale(0.92); } }
+@keyframes ultron-avatar-error { 25% { opacity: 0.68; transform: translateX(-2px); } 75% { opacity: 0.88; transform: translateX(2px); } }
 
 @media (max-width: 620px) {
-  .ultron-contact { right: 12px; bottom: 12px; }
-  .ultron-contact__launcher { min-width: 58px; width: 58px; grid-template-columns: 42px; padding: 7px; }
+  .ultron-contact { right: 12px; bottom: max(82px, calc(env(safe-area-inset-bottom) + 72px)); }
+  .ultron-contact__launcher { min-width: 60px; width: 60px; grid-template-columns: 46px; padding: 7px; }
+  .ultron-contact[data-open="true"] .ultron-contact__launcher { display: none; }
   .ultron-contact__launcher-copy,
   .ultron-contact__launcher > svg { display: none; }
   .ultron-contact__panel { width: min(360px, calc(100vw - 24px)); }
@@ -619,6 +702,15 @@ body {
   .ultron-contact *::before,
   .ultron-contact *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .ultron-contact__panel { animation: ultron-contact-fade 120ms ease both; transform: none; }
+  .ultron-avatar-presence__halo,
+  .ultron-avatar-presence__orbit,
+  .ultron-avatar-presence__portrait,
+  .ultron-avatar-presence__scan,
+  .ultron-avatar-presence__aperture,
+  .ultron-avatar-presence__voice,
+  .ultron-avatar-presence__voice i { animation: none !important; }
+  .ultron-avatar-presence__portrait { transform: none !important; }
+  .ultron-avatar-presence__scan { opacity: 0 !important; }
 }
 
 @keyframes ultron-contact-fade { from { opacity: 0; } to { opacity: 1; } }

@@ -1,3 +1,5 @@
+import { type CSSProperties } from 'react';
+
 export type UltronCoreState =
   | 'idle'
   | 'listening'
@@ -18,6 +20,8 @@ const CORE_COPY: Record<UltronCoreState, { label: string; detail: string }> = {
   success: { label: 'Готово', detail: 'Receipt сформирован' },
   blocked: { label: 'Заблокировано', detail: 'Контур остановлен безопасно' },
 };
+
+const CORE_VOICE_BARS = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 interface UltronCoreProps {
   state: UltronCoreState;
@@ -42,6 +46,10 @@ export function UltronCore({ state, motionEnabled }: UltronCoreProps) {
         <span className="ultron-core__ring ultron-core__ring--middle" />
         <span className="ultron-core__ring ultron-core__ring--inner" />
         <span className="ultron-core__scan" />
+        <span className="ultron-core__signal ultron-core__signal--north" />
+        <span className="ultron-core__signal ultron-core__signal--east" />
+        <span className="ultron-core__signal ultron-core__signal--south" />
+        <span className="ultron-core__signal ultron-core__signal--west" />
         <svg className="ultron-core__glyph" viewBox="0 0 160 160">
           <path className="ultron-core__frame" d="M80 18 125 42 142 91 112 135 53 138 19 96 32 43Z" />
           <path className="ultron-core__iris" d="M45 73 66 51h28l21 22-11 35-24 14-24-14Z" />
@@ -50,6 +58,9 @@ export function UltronCore({ state, motionEnabled }: UltronCoreProps) {
           <circle className="ultron-core__eye" cx="80" cy="84" r="10" />
           <circle className="ultron-core__eye-hot" cx="80" cy="84" r="3.5" />
         </svg>
+        <span className="ultron-core__voice" aria-hidden="true">
+          {CORE_VOICE_BARS.map((bar) => <i key={bar} style={{ '--core-bar': bar } as CSSProperties} />)}
+        </span>
       </div>
 
       <div className="ultron-presence__copy">

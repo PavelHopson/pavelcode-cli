@@ -1,10 +1,22 @@
 # Eclipse Hopson Sentinel Roadmap
 
+## Living voice assistant — 2026-08-25
+
+- [x] introduce one shared `idle / listening / thinking / speaking / success / error` presence contract
+- [x] animate the avatar, launcher and Ultron Core from real product state instead of decorative timers
+- [x] add an explicit one-turn voice conversation: STT -> selected Chat model -> bounded TTS
+- [x] keep a separate dictation-only route for composer review and editing
+- [x] add visible stop-speaking and global Motion controls; honor live Windows reduced-motion changes
+- [x] limit primary animation loops to compositor-friendly transform and opacity
+- [x] verify desktop normal-motion and compact mobile reduced-motion flows with zero overflow or browser errors
+- [ ] add a local TTS voice inventory and testable voice preview before offering voice selection
+- [ ] evaluate compact always-on-top mode without enabling wake word or background listening
+
 ## Persistent Ultron contact and flagship presentation — 2026-08-25
 
 - [x] add an original first-party Ultron avatar without protected franchise artwork
 - [x] keep one persistent contact dock visible across Chat and Ultron Core
-- [x] route explicit one-shot voice capture into the Chat composer for review, never auto-send
+- [x] provide two explicit one-shot routes: voice question with audible answer, or composer-only dictation
 - [x] provide direct Chat/Core routes, visible local privacy copy and keyboard Escape recovery
 - [x] cover desktop, compact mobile, focus and reduced-motion states
 - [x] rebuild the repository README around verified capabilities, real measurements and current safety boundaries

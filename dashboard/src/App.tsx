@@ -6,7 +6,9 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { BrandLockup } from './components/BrandMark';
 import { UsageGuide } from './components/UsageGuide';
 import { UltronContactDock } from './components/UltronContactDock';
+import { UltronAvatar } from './components/UltronAvatar';
 import { type ChatSession, type Message, loadSessions, saveSessions, createSession, getSelectedModel } from './lib/ai';
+import { type ContactTurn, type UltronPresenceState } from './lib/ultronPresence';
 
 
 const Chat = lazy(() => import('./components/Chat').then((module) => ({ default: module.Chat })));
@@ -17,10 +19,10 @@ type ElectronWindowStyle = CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag'
 const DRAG_STYLE: ElectronWindowStyle = { WebkitAppRegion: 'drag' };
 const NO_DRAG_STYLE: ElectronWindowStyle = { WebkitAppRegion: 'no-drag' };
 const USAGE_GUIDE_STORAGE_KEY = 'ultron-usage-guide-seen-v1';
+const MOTION_STORAGE_KEY = 'ultron-motion-enabled-v1';
 
-interface ContactDraft {
-  id: number;
-  text: string;
+function loadMotionPreference() {
+  return localStorage.getItem(MOTION_STORAGE_KEY) !== '0';
 }
 
 function loadInitialSessions(): ChatSession[] {
@@ -28,10 +30,12 @@ function loadInitialSessions(): ChatSession[] {
   return stored.length > 0 ? stored : [createSession(getSelectedModel())];
 }
 
-function SurfaceLoading() {
+function SurfaceLoading({ presence, motionEnabled }: { presence: UltronPresenceState; motionEnabled: boolean }) {
+  const loadingPresence = presence === 'idle' ? 'thinking' : presence;
   return (
-    <div className="h-full grid place-items-center bg-bg text-sm text-text-2" role="status" aria-live="polite">
-      Загрузка рабочей поверхности…
+    <div className="surface-loading" role="status" aria-live="polite">
+      <UltronAvatar presence={loadingPresence} size="chat" motionEnabled={motionEnabled} />
+      <span><strong>Альтрон готовит рабочую поверхность</strong><small>Состояние голосовой сессии сохранено</small></span>
     </div>
   );
 }
@@ -43,12 +47,30 @@ export default function App() {
   const [showGuide, setShowGuide] = useState(false);
   const [autoSpeak] = useState(() => localStorage.getItem('sentinel-auto-speak') === '1');
   const [surface, setSurface] = useState<'chat' | 'voice'>('voice');
-  const [contactDraft, setContactDraft] = useState<ContactDraft | null>(null);
+  const [contactTurn, setContactTurn] = useState<ContactTurn | null>(null);
+  const [presence, setPresence] = useState<UltronPresenceState>('idle');
+  const [motionPreference, setMotionPreference] = useState(loadMotionPreference);
+  const [systemReducedMotion, setSystemReducedMotion] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
 
   const activeSession = sessions.find(s => s.id === activeId) || null;
 
   // Persist sessions
   useEffect(() => { saveSessions(sessions); }, [sessions]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = (event: MediaQueryListEvent) => setSystemReducedMotion(event.matches);
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (presence !== 'success' && presence !== 'error') return;
+    const timeoutId = window.setTimeout(() => setPresence('idle'), presence === 'success' ? 1_400 : 2_400);
+    return () => window.clearTimeout(timeoutId);
+  }, [presence]);
 
   const handleNew = () => {
     const s = createSession(getSelectedModel());
@@ -104,11 +126,19 @@ export default function App() {
     setSurface('chat');
   };
 
-  const handleContactTranscript = (text: string) => {
+  const queueContactTurn = (text: string, mode: ContactTurn['mode']) => {
     if (!activeSession) handleNew();
-    setContactDraft({ id: Date.now(), text });
+    setContactTurn({ id: Date.now(), text, mode });
     setSurface('chat');
   };
+
+  const setMotionEnabled = () => {
+    const next = !motionPreference;
+    setMotionPreference(next);
+    localStorage.setItem(MOTION_STORAGE_KEY, next ? '1' : '0');
+  };
+
+  const motionEnabled = motionPreference && !systemReducedMotion;
 
   return (
     <div className="h-screen flex bg-bg overflow-hidden sentinel-shell" data-brand="ultron" data-visual-profile="operational">
@@ -162,14 +192,21 @@ export default function App() {
         {/* Chat area */}
         <div className="sentinel-workspace flex-1 flex overflow-hidden">
           <div className="flex-1 overflow-hidden">
-            <Suspense fallback={<SurfaceLoading />}>
-              {surface === 'voice' ? <VoiceCommandRoom /> : <Chat
+            <Suspense fallback={<SurfaceLoading presence={presence} motionEnabled={motionEnabled} />}>
+              {surface === 'voice' ? <VoiceCommandRoom
+                motionEnabled={motionEnabled}
+                motionLocked={systemReducedMotion}
+                onMotionChange={setMotionEnabled}
+                onPresenceChange={setPresence}
+              /> : <Chat
                 messages={activeSession?.messages || []}
                 onMessagesChange={handleMessagesChange}
                 showGuide={showGuide}
                 autoSpeak={autoSpeak}
-                externalDraft={contactDraft}
-                onExternalDraftApplied={() => setContactDraft(null)}
+                externalTurn={contactTurn}
+                onExternalTurnApplied={() => setContactTurn(null)}
+                onPresenceChange={setPresence}
+                motionEnabled={motionEnabled}
               />}
             </Suspense>
           </div>
@@ -196,9 +233,15 @@ export default function App() {
       />
       <UltronContactDock
         surface={surface}
+        presence={presence}
+        motionEnabled={motionEnabled}
+        motionLocked={systemReducedMotion}
         onOpenChat={openChat}
         onOpenOperator={() => setSurface('voice')}
-        onTranscript={handleContactTranscript}
+        onDraft={(text) => queueContactTurn(text, 'draft')}
+        onVoiceTurn={(text) => queueContactTurn(text, 'voice')}
+        onPresenceChange={setPresence}
+        onMotionChange={setMotionEnabled}
       />
     </div>
   );

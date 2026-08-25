@@ -229,7 +229,7 @@ This document records blocked checks, failed attempts, and known limitations dur
   session, bounded time/output and memory-only stdout parsing. Audio persistence and transcript
   logs are absent. A real microphone smoke produced a Russian transcript through CUDA Whisper.
 - Routed both Ultron Core and Chat microphone buttons through the same trusted desktop IPC. Chat
-  fills the composer for human review and never auto-sends recognized text.
+  fills the composer for human review unless the user explicitly selects the voice-question action.
 - Added portable Ollama `0.32.15` on loopback `127.0.0.1:11435` with a separate E-drive model
   store. HuiHui Qwen3.8 27B is exposed only as an opt-in `Ultron Lab` chat profile without tools,
   shell, filesystem, secrets, network actions, install, deploy or operator execute.
@@ -246,8 +246,9 @@ This document records blocked checks, failed attempts, and known limitations dur
 
 - Added a persistent avatar contact dock across Chat and Ultron Core. It exposes one obvious
   voice action plus direct routes to both surfaces without starting the microphone implicitly.
-- Voice capture reuses the fixed trusted Electron IPC contract. Successful recognition only fills
-  the Chat composer for human review; it never calls the model or sends a message automatically.
+- Voice capture reuses the fixed trusted Electron IPC contract. The original dictation path still
+  fills the Chat composer for review; the new voice-question path sends only after the user selects
+  the clearly labelled action.
 - Added keyboard Escape recovery, outside-click close, disabled/browser states, live status copy,
   compact mobile layout and tiered reduced-motion behavior. Animation is limited to transform and
   opacity effects.
@@ -263,3 +264,23 @@ This document records blocked checks, failed attempts, and known limitations dur
 - Narrowed the Office packaging regression from a blanket `process.env` ban to Office credential
   namespaces. This preserves the renderer/credential boundary while allowing the non-secret
   `ECLIPSE_AI_RUNTIME_DIR` path override used by the isolated local model runtime.
+
+# 2026-08-25 — living voice assistant state machine
+
+- Added one shared presence contract across Chat, the persistent contact dock and Ultron Core:
+  idle, listening, thinking, speaking, success and error.
+- Replaced the static avatar treatment with an original state-driven presence component. Breathing,
+  scanning, orbit, signal and voice-bar effects use transform and opacity only; dense operator panels
+  remain visually quiet.
+- Added an explicit one-turn voice conversation. «Спросить голосом» captures one local Whisper
+  transcript, sends it to the selected Chat model and speaks the bounded answer. «Только
+  продиктовать» keeps the existing review-first composer path.
+- Kept wake word, continuous listening, standing microphone permission and automatic follow-up
+  capture absent. Every new spoken turn requires a separate click, and TTS has a visible Stop action.
+- Centralized the Motion preference, subscribed to live Windows reduced-motion changes and disabled
+  continuous loops when the system preference is active.
+- Bounded browser TTS to 500 characters and 45 seconds, resolved interruption safely, and prevented
+  stale speech events from completing a newer turn.
+- Playwright production-preview QA passed at 1440x960 normal motion and 390x844 reduced motion with
+  zero console/page errors and zero horizontal overflow. The mobile launcher was moved away from the
+  primary bottom action and hidden while the contact panel is open.

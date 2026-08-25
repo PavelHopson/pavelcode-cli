@@ -90,9 +90,22 @@ export function createRecognition(
   return recognition;
 }
 
+let speechSequence = 0;
+let activeSpeech: { id: number; resolve: () => void; timeoutId: number } | null = null;
+
+function finishActiveSpeech(id: number) {
+  if (!activeSpeech || activeSpeech.id !== id) return;
+  window.clearTimeout(activeSpeech.timeoutId);
+  const resolve = activeSpeech.resolve;
+  activeSpeech = null;
+  resolve();
+}
+
 export function speak(text: string, lang: string = 'ru-RU'): Promise<void> {
   return new Promise((resolve) => {
     if (!isTTSSupported()) { resolve(); return; }
+
+    stopSpeaking();
 
     // Clean markdown from text
     const clean = text
@@ -109,6 +122,7 @@ export function speak(text: string, lang: string = 'ru-RU'): Promise<void> {
     const short = clean.length > 500 ? clean.slice(0, 500) + '...' : clean;
 
     const utterance = new SpeechSynthesisUtterance(short);
+    const speechId = ++speechSequence;
     utterance.lang = lang;
     utterance.rate = 1.05;
     utterance.pitch = 0.95;
@@ -121,12 +135,23 @@ export function speak(text: string, lang: string = 'ru-RU'): Promise<void> {
       || voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'));
     if (ruVoice) utterance.voice = ruVoice;
 
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
-    speechSynthesis.speak(utterance);
+    const timeoutId = window.setTimeout(() => {
+      speechSynthesis.cancel();
+      finishActiveSpeech(speechId);
+    }, 45_000);
+
+    activeSpeech = { id: speechId, resolve, timeoutId };
+    utterance.onend = () => finishActiveSpeech(speechId);
+    utterance.onerror = () => finishActiveSpeech(speechId);
+    try {
+      speechSynthesis.speak(utterance);
+    } catch {
+      finishActiveSpeech(speechId);
+    }
   });
 }
 
 export function stopSpeaking() {
   if (isTTSSupported()) speechSynthesis.cancel();
+  if (activeSpeech) finishActiveSpeech(activeSpeech.id);
 }

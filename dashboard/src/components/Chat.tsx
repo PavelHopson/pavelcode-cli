@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Code2, FolderSearch, Send, ShieldCheck, Square, Mic, MicOff } from 'lucide-react';
 import { sendMessage, type Message, getSelectedModel, MODELS } from '../lib/ai';
 import { isLocalSTTSupported, listenOnceLocal, speak, stopSpeaking } from '../lib/voice';
 import { MessageBubble } from './MessageBubble';
 import { VoiceWave } from './VoiceWave';
 import { Tooltip } from './Tooltip';
-import { EclipseMark } from './BrandMark';
+import { UltronAvatar } from './UltronAvatar';
+import { type ContactTurn, type UltronPresenceState } from '../lib/ultronPresence';
 
 const QUICK_PROMPTS = [
   { icon: Code2, label: 'Помоги разобраться с кодом', prompt: 'Проанализируй текущую задачу по коду и предложи безопасный план.' },
@@ -18,11 +19,22 @@ interface ChatProps {
   onMessagesChange: (msgs: Message[]) => void;
   showGuide: boolean;
   autoSpeak: boolean;
-  externalDraft?: { id: number; text: string } | null;
-  onExternalDraftApplied?: () => void;
+  externalTurn?: ContactTurn | null;
+  onExternalTurnApplied?: () => void;
+  onPresenceChange?: (state: UltronPresenceState) => void;
+  motionEnabled: boolean;
 }
 
-export function Chat({ messages, onMessagesChange, showGuide, autoSpeak, externalDraft, onExternalDraftApplied }: ChatProps) {
+export function Chat({
+  messages,
+  onMessagesChange,
+  showGuide,
+  autoSpeak,
+  externalTurn,
+  onExternalTurnApplied,
+  onPresenceChange,
+  motionEnabled,
+}: ChatProps) {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [listening, setListening] = useState(false);
@@ -31,27 +43,21 @@ export function Chat({ messages, onMessagesChange, showGuide, autoSpeak, externa
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const appliedDraftRef = useRef<number | null>(null);
+  const appliedTurnRef = useRef<number | null>(null);
+  const turnSequenceRef = useRef(0);
 
   const currentModel = MODELS.find(m => m.id === getSelectedModel());
   const localVoiceAvailable = isLocalSTTSupported();
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    bottomRef.current?.scrollIntoView({ behavior: reduceMotion || !motionEnabled ? 'auto' : 'smooth' });
+  }, [messages, motionEnabled]);
 
-  useEffect(() => {
-    if (!externalDraft || appliedDraftRef.current === externalDraft.id) return;
-    appliedDraftRef.current = externalDraft.id;
-    setInput(externalDraft.text);
-    setVoiceError('');
-    inputRef.current?.focus();
-    onExternalDraftApplied?.();
-  }, [externalDraft, onExternalDraftApplied]);
-
-  const handleSend = async (text?: string) => {
+  const handleSend = useCallback(async (text?: string, options: { forceSpeak?: boolean } = {}) => {
     const msg = (text || input).trim();
     if (!msg || streaming) return;
+    const turnId = ++turnSequenceRef.current;
 
     const userMsg: Message = { role: 'user', content: msg };
     const newMessages = [...messages, userMsg];
@@ -61,6 +67,7 @@ export function Chat({ messages, onMessagesChange, showGuide, autoSpeak, externa
 
     const assistantMsg: Message = { role: 'assistant', content: '' };
     onMessagesChange([...newMessages, assistantMsg]);
+    onPresenceChange?.('thinking');
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -71,46 +78,76 @@ export function Chat({ messages, onMessagesChange, showGuide, autoSpeak, externa
         onMessagesChange([...newMessages, { ...assistantMsg }]);
       }, controller.signal);
 
-      // Auto-speak response
-      if (autoSpeak && assistantMsg.content) {
+      if ((autoSpeak || options.forceSpeak) && assistantMsg.content) {
         setSpeaking(true);
+        onPresenceChange?.('speaking');
         await speak(assistantMsg.content);
         setSpeaking(false);
       }
+      if (turnSequenceRef.current === turnId) onPresenceChange?.('success');
     } catch (error: unknown) {
       const errorName = error instanceof Error ? error.name : '';
       if (errorName !== 'AbortError') {
         const message = error instanceof Error ? error.message : 'Не удалось получить ответ.';
         assistantMsg.content += `\n\n⚠️ ${message}`;
         onMessagesChange([...newMessages, { ...assistantMsg }]);
+        onPresenceChange?.('error');
+      } else {
+        onPresenceChange?.('idle');
       }
     } finally {
       setStreaming(false);
       abortRef.current = null;
     }
-  };
+  }, [autoSpeak, input, messages, onMessagesChange, onPresenceChange, streaming]);
+
+  useEffect(() => {
+    if (!externalTurn || appliedTurnRef.current === externalTurn.id) return;
+    appliedTurnRef.current = externalTurn.id;
+    setVoiceError('');
+    onExternalTurnApplied?.();
+
+    if (externalTurn.mode === 'voice') {
+      void handleSend(externalTurn.text, { forceSpeak: true });
+      return;
+    }
+
+    setInput(externalTurn.text);
+    inputRef.current?.focus();
+    onPresenceChange?.('success');
+  }, [externalTurn, handleSend, onExternalTurnApplied, onPresenceChange]);
+
+  useEffect(() => () => {
+    stopSpeaking();
+    onPresenceChange?.('idle');
+  }, [onPresenceChange]);
 
   const captureVoice = async () => {
     if (!localVoiceAvailable || listening || streaming) return;
     stopSpeaking();
     setVoiceError('');
     setListening(true);
+    onPresenceChange?.('listening');
     try {
       const result = await listenOnceLocal();
       if (!result.ok) {
         setVoiceError(result.error.message);
+        onPresenceChange?.('error');
         return;
       }
       setInput(result.text);
+      onPresenceChange?.('success');
     } finally {
       setListening(false);
     }
   };
 
   const handleStop = () => {
+    turnSequenceRef.current += 1;
     abortRef.current?.abort();
     stopSpeaking();
     setSpeaking(false);
+    onPresenceChange?.('idle');
   };
 
   return (
@@ -120,7 +157,7 @@ export function Chat({ messages, onMessagesChange, showGuide, autoSpeak, externa
         <div className="chat-content min-h-full space-y-3">
           {messages.length === 0 && (
             <div className="chat-empty">
-              <div className="chat-empty__mark"><EclipseMark size={42} /></div>
+              <div className="chat-empty__mark"><UltronAvatar presence="idle" size="chat" motionEnabled={motionEnabled} /></div>
               <p className="chat-empty__eyebrow">Eclipse Forge · Ultron</p>
               <h1>Чем займёмся?</h1>
               <p className="chat-empty__lead">

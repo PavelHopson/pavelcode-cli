@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml)
 ![Desktop](https://img.shields.io/badge/Desktop-Windows-111318?style=flat-square&logo=windows11&logoColor=F3F5F7)
-![Release](https://img.shields.io/badge/Ultron-1.2.0-8E1024?style=flat-square)
+![Release](https://img.shields.io/badge/Ultron-1.2.1-8E1024?style=flat-square)
 ![Runtime](https://img.shields.io/badge/Sentinel-0.1.7-15181D?style=flat-square)
 ![Local first](https://img.shields.io/badge/data-local--first-45D89A?style=flat-square)
 ![Policy](https://img.shields.io/badge/execution-human%20approved-F2C94C?style=flat-square)
@@ -42,9 +42,9 @@
 | Поверхность | Что даёт | Текущая граница |
 | --- | --- | --- |
 | **Ultron Core** | command room с plan, diff, approval и receipt | три фиксированных read-only handler |
-| **Постоянная связь** | видимый avatar-dock на любом экране | микрофон запускается только по нажатию |
-| **Локальный голос** | one-shot STT через CUDA Whisper | до 12 секунд, без фоновой записи |
-| **AI Chat** | локальные и OpenAI-compatible модели | voice-текст сначала попадает в composer |
+| **Постоянная связь** | живой avatar-dock на любом экране | микрофон запускается только по нажатию |
+| **Голосовой диалог** | one-shot STT, ответ модели и TTS | одна реплика на один явный клик |
+| **AI Chat** | локальные и OpenAI-compatible модели | голос можно отправить явно или оставить черновиком |
 | **Ultron Lab** | изолированный 27B experimental chat | без tools, shell, filesystem, network и execute |
 | **Sentinel CLI** | coding-agent, provider routing, bridge и MCP contracts | расширенные права зависят от явной конфигурации |
 | **Office bridge** | подписанные локальные события для Eclipse Chat | opt-in, bounded payloads, replay protection |
@@ -63,10 +63,10 @@
     </td>
     <td>
       <strong>Альтрон остаётся доступен на любой рабочей поверхности.</strong><br/><br/>
-      Постоянная кнопка открывает компактный contact panel: можно произнести фразу,
-      перейти в Chat или открыть Ultron Core. Голос не отправляется в облако и не запускается
-      автоматически. Распознанный текст появляется в поле Chat, где его можно проверить,
-      исправить и только потом отправить.
+      Постоянная кнопка открывает компактный contact panel. Действие «Спросить голосом»
+      распознаёт одну фразу, явно отправляет её в Chat и озвучивает ответ. Действие
+      «Только продиктовать» оставляет текст в composer для проверки. Микрофон никогда
+      не запускается автоматически.
     </td>
   </tr>
 </table>
@@ -78,13 +78,16 @@ explicit click
     └─> trusted Electron IPC (без renderer-параметров)
           └─> whisper.cpp + large-v3-turbo-q5_0
                 └─> transcript in memory
-                      └─> Chat composer for human review
+                      ├─> «Только продиктовать» → Chat composer
+                      └─> «Спросить голосом» → selected Chat model → bounded TTS
 ```
 
 - один STT process одновременно;
 - фиксированный timeout и rate limit;
 - bounded JSON output;
 - аудио и транскрипт не сохраняются;
+- визуальные состояния `listening / thinking / speaking / success / error` синхронизированы с turn;
+- TTS ограничен 500 символами и 45 секундами, голос можно остановить вручную;
 - wake word и background listening выключены.
 
 Подробности: [Eclipse Ultron Local AI Runtime](docs/ultron-local-ai-runtime.md).
