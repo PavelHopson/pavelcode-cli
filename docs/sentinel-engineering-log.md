@@ -260,3 +260,6 @@ This document records blocked checks, failed attempts, and known limitations dur
   between concurrent `node:test` files under Bun 1.3.12. The contracts remain blocking in a separate
   `node --test` step; the existing Bun suite stays unchanged. Updated the UTF-8 rename assertion to
   the current `Eclipse Ultron Desktop` product copy.
+- Narrowed the Office packaging regression from a blanket `process.env` ban to Office credential
+  namespaces. This preserves the renderer/credential boundary while allowing the non-secret
+  `ECLIPSE_AI_RUNTIME_DIR` path override used by the isolated local model runtime.

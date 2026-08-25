@@ -18,5 +18,5 @@ test('Electron resolves packaged Office modules from resources without exposing 
 
   assert.match(main, /process\.resourcesPath/)
   assert.match(main, /path\.join\(process\.resourcesPath, 'office', 'sentinel-office-runtime\.mjs'\)/)
-  assert.doesNotMatch(main, /contextBridge.*office|ipcRenderer.*office|office-credential|windows-credential|\.env|Authorization|Bearer/)
+  assert.doesNotMatch(main, /contextBridge.*office|ipcRenderer.*office|office-credential|windows-credential|process\.env\.(?:SENTINEL_OFFICE|ECLIPSE_OFFICE)|Authorization|Bearer/)
 })
