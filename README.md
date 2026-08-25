@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml)
 ![Desktop](https://img.shields.io/badge/Desktop-Windows-111318?style=flat-square&logo=windows11&logoColor=F3F5F7)
-![Release](https://img.shields.io/badge/Ultron-1.2.3-8E1024?style=flat-square)
+![Release](https://img.shields.io/badge/Ultron-1.2.4-8E1024?style=flat-square)
 ![Runtime](https://img.shields.io/badge/Sentinel-0.1.7-15181D?style=flat-square)
 ![Local first](https://img.shields.io/badge/data-local--first-45D89A?style=flat-square)
 ![Policy](https://img.shields.io/badge/execution-human%20approved-F2C94C?style=flat-square)
@@ -87,6 +87,8 @@ Operator: explicit dictation → editable command → plan → diff → approval
 - аудио и транскрипт не сохраняются;
 - визуальные состояния `listening / thinking / speaking / success / error` синхронизированы с turn;
 - TTS ограничен 500 символами и 45 секундами, голос можно остановить вручную;
+- голосовой профиль по умолчанию использует мужской Microsoft Pavel с более глубоким тембром и скоростью 1.20×; голос и скорость меняются с мгновенным preview в настройках;
+- модель прогревается при старте и повторно при нажатии на микрофон, получает только восемь последних сообщений и формирует короткую реплику до 160 токенов;
 - wake word и background listening выключены.
 
 Подробности: [Eclipse Ultron Local AI Runtime](docs/ultron-local-ai-runtime.md).

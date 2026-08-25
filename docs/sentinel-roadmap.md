@@ -23,7 +23,8 @@
 - [x] verify desktop normal-motion and compact mobile reduced-motion flows with zero overflow or browser errors
 - [x] fix FIFINE USB microphone capture by pinning the trusted Whisper child to SDL DirectSound
 - [x] split Ultron Core voice UX into an obvious spoken question path and explicit operator dictation
-- [ ] add a local TTS voice inventory and testable voice preview before offering voice selection
+- [x] add a local TTS voice inventory, Russian voice selection, bounded speed control and testable preview
+- [ ] evaluate MOSS-TTS-Nano ONNX in an isolated E-drive runtime against the system Pavel baseline: Russian quality, first-audio latency, CPU/RAM use, license and rollback
 - [ ] evaluate compact always-on-top mode without enabling wake word or background listening
 
 ## Retired persistent contact experiment — 2026-08-25

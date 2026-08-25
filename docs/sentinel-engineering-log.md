@@ -325,3 +325,15 @@ This document records blocked checks, failed attempts, and known limitations dur
 - Installed the pinned OrcaRouter Q4_K_M build in the E-drive Ollama Lab runtime. Ollama completed
   SHA-256 verification and registered digest `6e33a17b4eac0310b9bef6f005815e68d41b72f4ddaaa7c04fdca80245239b7b`
   (17,741,872,653 bytes). Promotion remains blocked on a recorded comparison benchmark.
+
+# 2026-08-25 — faster configurable Ultron voice
+
+- Replaced the unpredictable first available Russian browser voice with a deterministic preference for
+  installed `Microsoft Pavel`, using a deeper 0.82 pitch and 1.20x speaking rate by default.
+- Added a local Russian voice inventory, persistent bounded rate control and an explicit preview button in
+  Settings. Chromium now waits briefly for asynchronous OneCore/SAPI voice discovery before the first reply.
+- Reduced perceived response latency by warming fixed `qwen3:8b` again when capture starts, extending its
+  keep-alive to two hours, limiting conversation context to the last eight messages and bounding voice replies
+  to 160 tokens with a one-to-two-sentence system contract.
+- Kept all voice preferences local. No cloud TTS, voice cloning, background microphone capture or new system
+  installation was introduced. MOSS-TTS-Nano ONNX remains a separately benchmarked E-drive candidate.

@@ -130,7 +130,7 @@ export function UsageGuide({
               <span className="usage-guide-step-number">01</span>
               <div>
                 <p className="usage-guide-step-title"><Settings2 size={15} /> Проверьте локальный контур</p>
-                <p>В настройках показаны Ollama, Qwen 3 8B, Whisper offline и Windows TTS. Голосовой профиль уже выбран.</p>
+                <p>В настройках можно выбрать установленный русский голос, изменить скорость и сразу прослушать результат. По умолчанию выбран мужской Microsoft Pavel.</p>
                 <button type="button" className="usage-guide-action" onClick={onOpenSettings}>
                   Открыть настройки <ArrowRight size={13} />
                 </button>

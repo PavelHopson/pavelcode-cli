@@ -34,11 +34,48 @@ export const MODELS = [
 
 export type ModelDefinition = (typeof MODELS)[number];
 export const VOICE_MODEL_ID = 'qwen3:8b';
+const VOICE_WARMUP_TIMEOUT_MS = 120_000;
+let voiceWarmupInFlight: Promise<void> | null = null;
 
 const OLLAMA_ENDPOINTS = {
   primary: 'http://127.0.0.1:11434',
   lab: 'http://127.0.0.1:11435',
 } as const;
+
+export function warmVoiceModel(): Promise<void> {
+  if (voiceWarmupInFlight) return voiceWarmupInFlight;
+
+  voiceWarmupInFlight = (async () => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), VOICE_WARMUP_TIMEOUT_MS);
+    try {
+      const response = await fetch(`${OLLAMA_ENDPOINTS.primary}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: VOICE_MODEL_ID,
+          prompt: '',
+          stream: false,
+          keep_alive: '2h',
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        return;
+      }
+      await response.arrayBuffer();
+    } catch {
+      // The actual chat request provides the user-facing error if Ollama is unavailable.
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  })().finally(() => {
+    voiceWarmupInFlight = null;
+  });
+
+  return voiceWarmupInFlight;
+}
 
 export function getModelDefinition(model?: string): ModelDefinition {
   const requested = model || getSelectedModel();

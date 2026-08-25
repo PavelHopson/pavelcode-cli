@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, RotateCcw, ShieldCheck, Square, Volume2 } from 'lucide-react';
-import { sendMessage, type Message, VOICE_MODEL_ID } from '../lib/ai';
+import { sendMessage, type Message, VOICE_MODEL_ID, warmVoiceModel } from '../lib/ai';
 import { isLocalSTTSupported, isTTSSupported, listenOnceLocal, speak, stopSpeaking } from '../lib/voice';
 import { type ContactTurn, ULTRON_PRESENCE_COPY, type UltronPresenceState } from '../lib/ultronPresence';
 import { UltronAvatar } from './UltronAvatar';
 
 const VOICE_SYSTEM_PROMPT = [
   'Ты Альтрон, локальный голосовой ассистент Eclipse Forge.',
-  'Отвечай по-русски естественно, конкретно и кратко: обычно от одного до четырёх предложений.',
+  'Начинай сразу с прямого ответа. Отвечай по-русски естественно и кратко: одно или два коротких предложения.',
   'Не используй Markdown без прямой просьбы пользователя.',
   'Не утверждай, что выполнил действие, если нет проверяемого receipt.',
 ].join(' ');
@@ -68,7 +68,7 @@ export function UltronVoiceConversation({
 
     const turnId = ++turnSequenceRef.current;
     const userMessage: Message = { role: 'user', content: text };
-    const modelMessages = [...messages, userMessage];
+    const modelMessages = [...messages.slice(-8), userMessage];
     const assistantMessage: Message = { role: 'assistant', content: '' };
     onMessagesChange([...modelMessages, assistantMessage]);
     setError('');
@@ -88,7 +88,7 @@ export function UltronVoiceConversation({
         controller.signal,
         VOICE_MODEL_ID,
         VOICE_SYSTEM_PROMPT,
-        { maxTokens: 320, reasoningEffort: 'none' },
+        { maxTokens: 160, reasoningEffort: 'none' },
       );
 
       if (!assistantMessage.content.trim()) throw new Error('Локальная модель не вернула ответ.');
@@ -121,6 +121,7 @@ export function UltronVoiceConversation({
   const startVoiceTurn = async () => {
     if (!localVoiceAvailable || busy) return;
     stopSpeaking();
+    void warmVoiceModel();
     setError('');
     setCapturing(true);
     onPresenceChange('listening');
@@ -217,7 +218,7 @@ export function UltronVoiceConversation({
 
       <footer className="ultron-voice__footer">
         <span><Volume2 size={13} aria-hidden="true" /> Qwen 3 8B · быстрый локальный профиль</span>
-        <span>Whisper offline · TTS Windows · без фоновой записи</span>
+        <span>Whisper offline · мужской голос и скорость настраиваются · без фоновой записи</span>
       </footer>
     </section>
   );

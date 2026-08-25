@@ -102,7 +102,7 @@ async function warmPrimaryVoiceModel() {
         model: 'qwen3:8b',
         prompt: '',
         stream: false,
-        keep_alive: '30m',
+        keep_alive: '2h',
       }),
       signal: controller.signal,
     });
