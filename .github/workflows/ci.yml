@@ -27,6 +27,13 @@ jobs:
       - name: Test (TypeScript)
         run: bun test
 
+      - name: Test desktop contracts (Node)
+        run: >-
+          node --test
+          scripts/dashboard-branding.contract.mjs
+          scripts/dashboard-ultron-security.contract.mjs
+          scripts/dashboard-usage-guide.contract.mjs
+
       - name: Typecheck supported Eclipse contracts
         run: bun run typecheck:supported
 

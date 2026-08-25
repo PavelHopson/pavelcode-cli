@@ -225,9 +225,9 @@ Focused security/UX contracts:
 ```powershell
 node --test scripts/dashboard-security.test.mjs
 node --test scripts/dashboard-operator-security.test.mjs
-node --test scripts/dashboard-ultron-security.test.mjs
-node --test scripts/dashboard-branding.test.mjs
-node --test scripts/dashboard-usage-guide.test.mjs
+node --test scripts/dashboard-ultron-security.contract.mjs
+node --test scripts/dashboard-branding.contract.mjs
+node --test scripts/dashboard-usage-guide.contract.mjs
 ```
 
 Runtime:

@@ -66,7 +66,7 @@ test('Russian operator copy survives source decoding exactly', async () => {
   assert.match(operator, /Предпросмотр памяти готов\. Ничего не сохранено\./)
   assert.match(room, /Подтвердить read-only план/)
   assert.match(room, /Выполнить локально/)
-  assert.match(client, /Предпросмотр готов\. Для подтверждённого локального запуска откройте Sentinel Desktop\./)
+  assert.match(client, /Предпросмотр готов\. Для подтверждённого локального запуска откройте Eclipse Ultron Desktop\./)
 })
 
 test('dashboard declares UTF-8 and Russian document language', async () => {

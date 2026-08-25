@@ -256,3 +256,7 @@ This document records blocked checks, failed attempts, and known limitations dur
 - Rebuilt the root README as the flagship product page while keeping the claims verifiable: current
   capabilities, explicit permission boundaries, measured 27B cold/warm performance, architecture,
   quick start, quality gates, documentation and unresolved signing/provenance constraints.
+- Split the new Node desktop contracts from Bun auto-discovery after CI exposed a runner collision
+  between concurrent `node:test` files under Bun 1.3.12. The contracts remain blocking in a separate
+  `node --test` step; the existing Bun suite stays unchanged. Updated the UTF-8 rename assertion to
+  the current `Eclipse Ultron Desktop` product copy.
