@@ -2,7 +2,29 @@
 
 This document records blocked checks, failed attempts, and known limitations during the build-out of `Eclipse Hopson Sentinel`.
 
+## 2026-08-24
+
+### Embedded desktop usage guide
+
+- Bumped the desktop patch release to `1.1.1` so the guide-enabled installer is distinguishable from the installed `1.1.0` build.
+- Added a first-run quick-start dialog that routes directly to model settings, local Chat and Safe Operator.
+- Kept the guide permanently discoverable from the sidebar and compact header after its automatic first display.
+- Limited copy to implemented behavior: Ollama chat plus three approved read-only Operator skills; no file writes, shell, network or autonomous PC-control claims.
+- Added modal semantics, Escape close, Tab containment, focus restoration, bounded scrolling and responsive layouts.
+- Added a focused static regression test for discoverability, capability claims and accessibility contracts.
+
 ## 2026-08-23
+
+### Eclipse Forge desktop and installer visual system
+
+- Replaced the generic orb treatment with an original reusable Eclipse Forge mark and shared graphite, signal-blue and forge-gold tokens.
+- Reworked the Jarvis shell, sidebar, Chat empty state, Safe Operator copy, settings dialog and status surfaces while preserving the existing authority and provider behavior.
+- Added keyboard-reachable session selection, focus-visible message actions, Escape-close dialog behavior, mobile new/settings actions and a breakpoint that protects Command Room width at 1280px.
+- Added a deterministic PowerShell generator for 24-bit NSIS sidebar/header bitmaps and a 256px ICO; the generator downloads nothing and uses only first-party geometry and system fonts.
+- Switched to a bilingual assisted NSIS flow with branded header, sidebar, application, installer, uninstaller, window and tray assets.
+- The default electron build initially hit repeatable Defender/AV `EPERM` locks while renaming freshly downloaded Electron archives. Packaging from the already installed lockfile-pinned `node_modules/electron/dist` completed and is now the reproducible project command.
+- Real installer QA confirmed Russian install-mode localization and the branded header. Real packaged Electron QA exposed the early 1280px status-rail breakpoint; it was moved to the 2xl layout.
+- Public release remains blocked by absent Windows code signing and the existing provenance/redistribution review.
 
 ### Dependency and release-surface verification
 
@@ -168,3 +190,69 @@ This document records blocked checks, failed attempts, and known limitations dur
   numbers, recovery keys, secrets and profile paths; file output occurs only with explicit `-Out`.
 - Added a dependency-free synthetic self-test, Config Health coverage, documentation and a Windows
   CI gate. Missing commands or permissions remain `unknown` instead of producing false failures.
+
+# 2026-08-25 — Eclipse Ultron desktop command center
+
+- Added the original Eclipse Ultron user-facing identity without renaming the Sentinel runtime,
+  repository, local storage or versioned IPC schemas.
+- Rebuilt the desktop Operator around a visible state machine and central reactive core. The UI
+  exposes plan, diff, approval, one-shot execution, blocked/error state and final receipt.
+- Added a manual Motion switch and `prefers-reduced-motion` fallback. Continuous visual motion is
+  restricted to compositor-friendly transform/opacity effects.
+- Exposed the existing first-party Windows one-shot STT script through a new fixed Electron IPC
+  channel. The renderer passes no arguments; the main process validates the sender, enforces one
+  active session, rate and output limits, a process timeout and redacted error responses.
+- Kept Electron browser microphone permissions fail-closed. Voice is explicit, local, bounded to
+  twelve seconds and unavailable in browser preview.
+- Updated first-run guidance, favicon, package display name and deterministic NSIS assets to the
+  Eclipse crimson/graphite/silver palette. No third-party character art or protected franchise
+  assets are included.
+- Pinned Electron `userData` to the previous `Eclipse Sentinel` profile before app readiness so
+  the Ultron product rename preserves local sessions, model choice and other existing settings.
+- Verified the local Windows upgrade from registered Sentinel 1.1.1 to Ultron 1.2.0. NSIS moved
+  the machine-wide installation to the approved `E:\ADMIN_HOPSON_PC\Программы\Eclipse Ultron`
+  path, removed the old product directory, created desktop/Start Menu shortcuts and launched a
+  responsive Ultron window. Microphone capture remains pending an explicit user button press.
+- Diagnosed the first desktop voice smoke: Windows exposed zero `System.Speech` recognizers, but
+  the previous adapter collapsed that dependency failure into a misleading `not recognized`
+  message. The STT contract now selects an explicit Russian recognizer and distinguishes missing
+  Speech capability, missing Russian language pack, microphone denial and genuine no-speech.
+
+# 2026-08-25 — Local Whisper and isolated 27B Lab runtime
+
+- Replaced the required Windows Speech dependency with verified portable `whisper.cpp b4938`
+  CUDA binaries and the multilingual `large-v3-turbo-q5_0` model. Runtime, weights and temporary
+  state live only under the approved `E:\ADMIN_HOPSON_PC\Программы\Eclipse AI Runtime` root.
+- Verified published SHA-256 for the Whisper runtime, Whisper model and portable Ollama archive.
+  Ollama also verified every downloaded 27B model blob before writing its manifest.
+- Voice capture now uses an exact hidden child process, fixed Russian/VAD parameters, one active
+  session, bounded time/output and memory-only stdout parsing. Audio persistence and transcript
+  logs are absent. A real microphone smoke produced a Russian transcript through CUDA Whisper.
+- Routed both Ultron Core and Chat microphone buttons through the same trusted desktop IPC. Chat
+  fills the composer for human review and never auto-sends recognized text.
+- Added portable Ollama `0.32.15` on loopback `127.0.0.1:11435` with a separate E-drive model
+  store. HuiHui Qwen3.8 27B is exposed only as an opt-in `Ultron Lab` chat profile without tools,
+  shell, filesystem, secrets, network actions, install, deploy or operator execute.
+- Installed model size is 16.52 GiB. The measured 8K pilot placed about 11.3 GiB on GPU and
+  4.7 GiB in host memory. Cold load was 233.3 s; total first response 254.56 s at 8.2 tok/s.
+  A warm request completed in 5.07 s at 6.98 tok/s. The model works but is not suitable as the
+  default; `qwen3:8b` remains the practical primary profile.
+- Focused security/product tests, dashboard lint, production build and zero-advisory production
+  dependency audit passed. Installer rebuilt successfully, updated the approved E-drive Ultron
+  installation with exit code 0, relaunched the desktop app and auto-started the verified portable
+  Lab server on `127.0.0.1:11435` with the expected Q4_K_M model manifest.
+
+# 2026-08-25 — persistent Ultron contact and repository presentation
+
+- Added a persistent avatar contact dock across Chat and Ultron Core. It exposes one obvious
+  voice action plus direct routes to both surfaces without starting the microphone implicitly.
+- Voice capture reuses the fixed trusted Electron IPC contract. Successful recognition only fills
+  the Chat composer for human review; it never calls the model or sends a message automatically.
+- Added keyboard Escape recovery, outside-click close, disabled/browser states, live status copy,
+  compact mobile layout and tiered reduced-motion behavior. Animation is limited to transform and
+  opacity effects.
+- Created original Eclipse Forge crimson/graphite/silver avatar and hero artwork with no protected
+  franchise imagery, then captured the current product UI at desktop and compact breakpoints.
+- Rebuilt the root README as the flagship product page while keeping the claims verifiable: current
+  capabilities, explicit permission boundaries, measured 27B cold/warm performance, architecture,
+  quick start, quality gates, documentation and unresolved signing/provenance constraints.

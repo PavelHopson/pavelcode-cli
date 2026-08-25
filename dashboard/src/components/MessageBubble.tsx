@@ -74,7 +74,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </ReactMarkdown>
         </div>
         {/* Actions */}
-        <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           <button onClick={() => handleCopy(message.content)}
             className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-text-3 hover:text-text-2 hover:bg-card transition-colors">
             {copied ? <Check size={10} /> : <Copy size={10} />} Копировать

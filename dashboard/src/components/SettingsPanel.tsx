@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { X, Cpu, Server } from 'lucide-react';
-import { MODELS, getSelectedModel, setSelectedModel } from '../lib/ai';
+import { useEffect, useState } from 'react';
+import { X, Cpu, Server, TriangleAlert } from 'lucide-react';
+import { MODELS, getModelDefinition, getSelectedModel, setSelectedModel } from '../lib/ai';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -12,7 +12,19 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
   const [model, setModel] = useState(getSelectedModel());
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
+
+  const selectedDefinition = getModelDefinition(model);
+  const labSelected = selectedDefinition.risk === 'experimental';
 
   const handleSave = () => {
     setSelectedModel(model);
@@ -22,11 +34,20 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-panel border border-border rounded-2xl w-full max-w-md mx-4 overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="settings-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        aria-labelledby="settings-title"
+        aria-modal="true"
+        className="settings-dialog bg-panel border border-border rounded-2xl w-full max-w-md mx-4 overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-medium text-text-1">Настройки</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-text-3 hover:bg-card hover:text-text-1 transition-colors">
+          <div className="settings-title">
+            <h2 id="settings-title" className="text-sm font-medium text-text-1">Настройки Eclipse Ultron</h2>
+            <p>Локальный провайдер и модель по умолчанию</p>
+          </div>
+          <button type="button" aria-label="Закрыть настройки" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-text-3 hover:bg-card hover:text-text-1 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -34,10 +55,10 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
         <div className="p-5 space-y-6">
           {/* Provider info */}
           <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
-            <Server size={16} className="text-live" />
+            <Server size={16} className={labSelected ? 'text-accent' : 'text-live'} />
             <div>
-              <p className="text-xs font-medium text-text-1">Ollama (локально)</p>
-              <p className="text-[10px] text-text-3">http://localhost:11434 · Приватно · Бесплатно</p>
+              <p className="text-xs font-medium text-text-1">{labSelected ? 'Ollama Lab · изолированный' : 'Ollama · основной'}</p>
+              <p className="text-[10px] text-text-3">127.0.0.1:{labSelected ? '11435' : '11434'} · Только это устройство</p>
             </div>
           </div>
 
@@ -54,7 +75,7 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
                       ? 'border-accent/25 bg-accent/5 text-text-1'
                       : 'border-border text-text-3 hover:bg-card hover:text-text-2'
                   }`}>
-                  <input type="radio" name="model" value={m.id} checked={model === m.id} onChange={() => setModel(m.id)} className="hidden" />
+                  <input type="radio" name="model" value={m.id} checked={model === m.id} onChange={() => setModel(m.id)} className="sr-only" />
                   <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${model === m.id ? 'border-accent' : 'border-text-3'}`}>
                     {model === m.id && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
                   </div>
@@ -67,19 +88,30 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
             </div>
           </div>
 
+          {labSelected && (
+            <div className="px-4 py-3 bg-accent/5 border border-accent/20 rounded-xl" role="status">
+              <p className="flex items-center gap-2 text-xs font-medium text-accent">
+                <TriangleAlert size={14} /> Экспериментальный Lab-профиль
+              </p>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
+                Модель работает только в чате. Shell, файлы, сеть, секреты и operator execute ей недоступны.
+                Ответы требуют ручной проверки.
+              </p>
+            </div>
+          )}
+
           {/* Install hint */}
           <div className="px-4 py-3 bg-card border border-border rounded-xl">
             <p className="text-[11px] text-text-3 leading-relaxed">
-              Установка моделей:<br/>
-              <code className="text-accent text-[10px]">ollama pull qwen3:32b</code><br/>
-              <code className="text-accent text-[10px]">ollama pull qwen3:8b</code>
+              Локальный runtime и модели:<br/>
+              <code className="text-accent text-[10px]">E:\ADMIN_HOPSON_PC\Программы\Eclipse AI Runtime</code>
             </p>
           </div>
         </div>
 
         <div className="px-5 py-4 border-t border-border flex items-center justify-between">
           <p className={`text-xs transition-opacity ${saved ? 'text-live opacity-100' : 'opacity-0'}`}>✓ Сохранено</p>
-          <button onClick={handleSave}
+          <button type="button" onClick={handleSave}
             className="px-5 py-2 rounded-lg bg-accent/10 border border-accent/20 text-accent text-xs font-medium hover:bg-accent/15 transition-colors">
             Сохранить
           </button>

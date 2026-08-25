@@ -1,5 +1,36 @@
 # Eclipse Hopson Sentinel Roadmap
 
+## Persistent Ultron contact and flagship presentation — 2026-08-25
+
+- [x] add an original first-party Ultron avatar without protected franchise artwork
+- [x] keep one persistent contact dock visible across Chat and Ultron Core
+- [x] route explicit one-shot voice capture into the Chat composer for review, never auto-send
+- [x] provide direct Chat/Core routes, visible local privacy copy and keyboard Escape recovery
+- [x] cover desktop, compact mobile, focus and reduced-motion states
+- [x] rebuild the repository README around verified capabilities, real measurements and current safety boundaries
+- [x] add first-party hero, avatar and current product screenshot assets
+- [ ] evaluate an optional always-on-top compact window; keep background listening disabled by default
+
+## Desktop first-run guidance — 2026-08-24
+
+- [x] add a first-run quick-start dialog for the local model, Chat and Safe Operator paths
+- [x] keep a persistent `Как пользоваться` entry in desktop and compact navigation
+- [x] link every step to its real destination instead of relying on explanatory copy alone
+- [x] document the current read-only capability boundary without implying autonomous PC control
+- [x] add Escape close, focus containment/restoration, responsive overflow and reduced-motion compatibility
+- [ ] replace the static model recommendation with a local Ollama inventory and one-click safe selection
+
+## Eclipse Forge desktop visual system — 2026-08-23
+
+- [x] replace the generic desktop orb with one original Eclipse Forge mark across shell, favicon, window and tray
+- [x] unify Jarvis shell, sidebar, Chat, Safe Operator and Settings on graphite/signal-blue/forge-gold tokens
+- [x] add keyboard-reachable session navigation, dialog semantics, quick-start empty state and mobile primary actions
+- [x] keep reduced motion, focus visibility, loading, empty, error, success and disabled states explicit
+- [x] build an assisted bilingual NSIS installer with first-party header/sidebar/icon assets
+- [x] generate and validate exact 164x314/150x57/256x256 installer assets without external artwork or fonts
+- [x] package from the lockfile-pinned local Electron distribution to avoid repeated Windows extraction locks
+- [ ] sign the installer and application executable before any public distribution
+
 ## Desktop dependency hardening — 2026-08-23
 
 - [x] upgrade Electron, electron-builder and Vite to advisory-free supported releases
@@ -449,3 +480,25 @@ The next milestone should not be considered complete until all of the following 
 - [x] Add fast, balanced, and deep aliases for Luna, Terra, and Sol through the existing Codex Responses transport.
 - [x] Keep model choice and reasoning defaults explicit and covered by focused provider tests.
 - [ ] Run production-like quality, latency, and usage evals before changing any default or enabling autonomous tools.
+
+## Eclipse Ultron desktop identity — 2026-08-25
+
+### P0 completed
+
+- [x] Introduce Eclipse Ultron as the user-facing desktop product while preserving Sentinel runtime, storage and IPC identifiers.
+- [x] Replace the static operator surface with a state-driven Ultron Core: idle, listening, approval, executing, speaking, success and blocked.
+- [x] Keep the execution sequence deterministic: command -> plan/diff -> human approval -> one-shot execute -> receipt.
+- [x] Add explicit STOP and Motion controls; respect OS reduced-motion and keep core animation to transform/opacity.
+- [x] Add fixed local CUDA Whisper one-shot STT through trusted Electron IPC without renderer parameters, shell expansion, OAuth, background recording or transcript persistence.
+- [x] Rebrand the application, first-run guide, icon and NSIS artwork to the original Eclipse crimson/graphite/silver system.
+- [x] Verify a machine-wide Windows upgrade from Sentinel 1.1.1 to Ultron 1.2.0 in the approved E-drive directory.
+- [x] Install the verified portable `whisper.cpp b4938` runtime and `large-v3-turbo-q5_0` model only on the approved E-drive, then pass a real Russian microphone smoke.
+- [x] Install portable Ollama 0.32.15 and HuiHui Qwen3.8 27B in an isolated loopback Lab profile with a separate E-drive model store and no tools.
+
+### P1 next
+
+- [ ] Add an in-product download/update verifier for Local AI Runtime; binaries and weights remain outside Git and installer.
+- [x] Complete the 27B warm/cold latency pilot: 233.3 s cold load and about 7 tok/s warm generation confirm Lab must remain opt-in chat-only; `qwen3:8b` stays primary.
+- [ ] Add an explicit cancellable voice session contract before offering longer capture windows.
+- [ ] Add signed Windows releases; an unsigned installer remains local/internal only.
+- [ ] Expand Ultron Core beyond read-only only through separate least-privilege capability contracts and visible approval gates.

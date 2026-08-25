@@ -1,40 +1,199 @@
 param(
-  [int]$TimeoutSeconds = 8
+  [int]$TimeoutSeconds = 12,
+  [string]$RuntimeRoot = ''
 )
 
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = $utf8
+$OutputEncoding = $utf8
+$errorCode = 'STT_FAILED'
+$recognizer = $null
+$whisperProcess = $null
+
+function Write-SttPayload {
+  param(
+    [bool]$Ok,
+    [string]$Code = '',
+    [string]$Text = '',
+    [Nullable[double]]$Confidence = $null,
+    [string]$ErrorMessage = ''
+  )
+
+  $payload = if ($Ok) {
+    @{
+      ok = $true
+      text = $Text
+      confidence = $Confidence
+      engine = 'whisper.cpp'
+    }
+  } else {
+    @{
+      ok = $false
+      code = $Code
+      error = $ErrorMessage
+    }
+  }
+
+  $payload | ConvertTo-Json -Compress
+}
+
+function Stop-WhisperProcess {
+  if ($null -eq $script:whisperProcess -or $script:whisperProcess.HasExited) {
+    return
+  }
+
+  $script:whisperProcess.Kill()
+  $script:whisperProcess.WaitForExit(2000) | Out-Null
+}
+
+function Invoke-WhisperRecognition {
+  param(
+    [string]$Root,
+    [int]$ListenTimeoutSeconds
+  )
+
+  if ([string]::IsNullOrWhiteSpace($Root)) {
+    return $null
+  }
+
+  if ($Root.Contains('"')) {
+    $script:errorCode = 'WHISPER_RUNTIME_INVALID'
+    throw 'The configured Whisper runtime path is invalid.'
+  }
+
+  $fullRoot = [System.IO.Path]::GetFullPath($Root)
+  $whisperExe = Join-Path $fullRoot 'whisper\Release\whisper-stream.exe'
+  $modelPath = Join-Path $fullRoot 'models\whisper\ggml-large-v3-turbo-q5_0.bin'
+  if (-not (Test-Path -LiteralPath $whisperExe -PathType Leaf)) {
+    return $null
+  }
+  if (-not (Test-Path -LiteralPath $modelPath -PathType Leaf)) {
+    $script:errorCode = 'WHISPER_MODEL_MISSING'
+    throw 'The local Whisper model is missing.'
+  }
+
+  $arguments = '-m "{0}" -l ru --step 0 --length 6000 --keep 200 -vth 0.60 -fth 100 -nf' -f $modelPath
+  $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+  $startInfo.FileName = $whisperExe
+  $startInfo.Arguments = $arguments
+  $startInfo.WorkingDirectory = Split-Path -Parent $whisperExe
+  $startInfo.UseShellExecute = $false
+  $startInfo.CreateNoWindow = $true
+  $startInfo.RedirectStandardOutput = $true
+  $startInfo.RedirectStandardError = $true
+  $startInfo.StandardOutputEncoding = $utf8
+  $startInfo.StandardErrorEncoding = $utf8
+
+  $script:whisperProcess = New-Object System.Diagnostics.Process
+  $script:whisperProcess.StartInfo = $startInfo
+
+  try {
+    if (-not $script:whisperProcess.Start()) {
+      throw 'Process start returned false.'
+    }
+  } catch {
+    $script:errorCode = 'WHISPER_START_FAILED'
+    throw 'The local Whisper runtime could not start.'
+  }
+
+  $stdoutTask = $script:whisperProcess.StandardOutput.ReadToEndAsync()
+  $stderrTask = $script:whisperProcess.StandardError.ReadToEndAsync()
+  $deadline = [DateTime]::UtcNow.AddSeconds([Math]::Max(6, $ListenTimeoutSeconds))
+  while ([DateTime]::UtcNow -lt $deadline -and -not $script:whisperProcess.HasExited) {
+    Start-Sleep -Milliseconds 200
+  }
+
+  Stop-WhisperProcess
+  $stdoutText = $stdoutTask.GetAwaiter().GetResult()
+  $stderrText = $stderrTask.GetAwaiter().GetResult()
+
+  if ($stderrText -match 'audio\.init\(\) failed|failed to open[^\r\n]*capture') {
+    $script:errorCode = 'MICROPHONE_UNAVAILABLE'
+    throw 'Whisper could not open the default microphone.'
+  }
+  if ($stderrText -match 'failed to initialize whisper context|failed to load model') {
+    $script:errorCode = 'WHISPER_MODEL_INVALID'
+    throw 'Whisper could not load the local speech model.'
+  }
+
+  $transcriptionMatch = [regex]::Match(
+    $stdoutText,
+    '(?s)### Transcription \d+ START[^\r\n]*\r?\n(.*?)\r?\n### Transcription \d+ END'
+  )
+  if (-not $transcriptionMatch.Success) {
+    $script:errorCode = 'NO_SPEECH_RECOGNIZED'
+    throw 'No speech was recognized before the local timeout.'
+  }
+
+  $rawTranscript = $transcriptionMatch.Groups[1].Value
+  $text = $rawTranscript -replace '(?m)^\s*\[[^\]]+\]\s*', ''
+  $text = $text -replace '<\|[^|]+\|>', ''
+  $text = $text -replace '\s+', ' '
+  $text = $text.Trim()
+
+  if ([string]::IsNullOrWhiteSpace($text)) {
+    $script:errorCode = 'NO_SPEECH_RECOGNIZED'
+    throw 'Whisper returned an empty transcript.'
+  }
+
+  return (Write-SttPayload -Ok $true -Text $text)
+}
+
 try {
+  $whisperPayload = Invoke-WhisperRecognition -Root $RuntimeRoot -ListenTimeoutSeconds $TimeoutSeconds
+  if ($null -ne $whisperPayload) {
+    $whisperPayload
+    exit 0
+  }
+
+  # Compatibility fallback for machines that already have Windows Speech.
+  # Eclipse Ultron never installs this system capability automatically.
   Add-Type -AssemblyName System.Speech
 
-  $recognizer = New-Object System.Speech.Recognition.SpeechRecognitionEngine
+  $installedRecognizers = @([System.Speech.Recognition.SpeechRecognitionEngine]::InstalledRecognizers())
+  if ($installedRecognizers.Count -eq 0) {
+    $errorCode = 'WHISPER_RUNTIME_MISSING'
+    throw 'Eclipse AI Runtime is missing and Windows Speech Recognition is not installed.'
+  }
+
+  $russianRecognizer = $installedRecognizers |
+    Where-Object { $_.Culture.Name -eq 'ru-RU' -or $_.Culture.TwoLetterISOLanguageName -eq 'ru' } |
+    Select-Object -First 1
+  if ($null -eq $russianRecognizer) {
+    $errorCode = 'RUSSIAN_SPEECH_PACK_MISSING'
+    throw 'The local Whisper runtime is missing and no Russian Windows speech pack is available.'
+  }
+
+  $recognizer = [System.Speech.Recognition.SpeechRecognitionEngine]::new($russianRecognizer.Culture)
   $grammar = New-Object System.Speech.Recognition.DictationGrammar
 
   try {
     $recognizer.SetInputToDefaultAudioDevice()
   } catch {
-    throw "Microphone access is unavailable. Check Windows microphone privacy settings and default recording device."
+    $errorCode = 'MICROPHONE_UNAVAILABLE'
+    throw 'Microphone access is unavailable.'
   }
 
   $recognizer.LoadGrammar($grammar)
-
   $result = $recognizer.Recognize([TimeSpan]::FromSeconds($TimeoutSeconds))
 
   if ($null -eq $result -or [string]::IsNullOrWhiteSpace($result.Text)) {
-    throw "No speech recognized within the timeout window."
+    $errorCode = 'NO_SPEECH_RECOGNIZED'
+    throw 'No speech was recognized before the local timeout.'
   }
 
-  $payload = @{
+  @{
     ok = $true
     text = $result.Text
     confidence = $result.Confidence
-  }
-
-  $payload | ConvertTo-Json -Compress
+    engine = 'windows-speech'
+  } | ConvertTo-Json -Compress
 } catch {
-  $payload = @{
-    ok = $false
-    error = $_.Exception.Message
-  }
-
-  $payload | ConvertTo-Json -Compress
+  Write-SttPayload -Ok $false -Code $errorCode -ErrorMessage $_.Exception.Message
   exit 1
+} finally {
+  Stop-WhisperProcess
+  if ($null -ne $recognizer) {
+    $recognizer.Dispose()
+  }
 }

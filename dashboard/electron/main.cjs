@@ -1,13 +1,28 @@
 const { app, BrowserWindow, shell, Menu, Tray, globalShortcut, nativeImage } = require('electron');
+const { spawn } = require('child_process');
 const path = require('path');
+const net = require('net');
+const { existsSync } = require('fs');
 const { ipcMain } = require('electron');
 const { pathToFileURL } = require('url');
+
+// The desktop product was renamed to Eclipse Ultron, but the existing local
+// Chromium profile remains the stable data boundary for sessions and settings.
+// Set it before app readiness so an upgrade never creates an empty parallel profile.
+app.setPath('userData', path.join(app.getPath('appData'), 'Eclipse Sentinel'));
 
 const isDev = !app.isPackaged;
 let win = null;
 let tray = null;
 let safeOperatorExecutor = null;
+let labOllamaProcess = null;
 const EXECUTE_CHANNEL = 'sentinel:operator:execute';
+const VOICE_LISTEN_CHANNEL = 'sentinel:voice:listen-once';
+const VOICE_OUTPUT_LIMIT_BYTES = 8 * 1024;
+const VOICE_PROCESS_TIMEOUT_MS = 25_000;
+const VOICE_RATE_LIMIT_MS = 1_500;
+let voiceListenInFlight = false;
+let voiceLastStartedAt = 0;
 const operatorModuleUrl = pathToFileURL(
   path.resolve(__dirname, 'sentinel-safe-operator.mjs'),
 ).href;
@@ -17,9 +32,62 @@ const officeRuntimeModulePath = isDev
   ? path.resolve(__dirname, '../../office/sentinel-office-runtime.mjs')
   : path.join(process.resourcesPath, 'office', 'sentinel-office-runtime.mjs');
 const officeRuntimeModuleUrl = pathToFileURL(officeRuntimeModulePath).href;
+const windowIconPath = isDev
+  ? path.resolve(__dirname, '../build/eclipse-sentinel.ico')
+  : path.join(process.resourcesPath, 'brand', 'eclipse-sentinel.ico');
 const officeRuntimePromise = import(officeRuntimeModuleUrl)
   .then(({ createSentinelOfficeRuntime }) => createSentinelOfficeRuntime())
   .catch(() => null);
+
+const voiceScriptPath = isDev
+  ? path.resolve(__dirname, '../../scripts/sentinel-stt.ps1')
+  : path.join(process.resourcesPath, 'voice', 'sentinel-stt.ps1');
+const eclipseProgramsRoot = isDev
+  ? path.join(path.parse(__dirname).root, 'ADMIN_HOPSON_PC', 'Программы')
+  : path.dirname(path.dirname(process.execPath));
+const eclipseAiRuntimeRoot = process.env.ECLIPSE_AI_RUNTIME_DIR
+  ? path.resolve(process.env.ECLIPSE_AI_RUNTIME_DIR)
+  : path.join(eclipseProgramsRoot, 'Eclipse AI Runtime');
+const labOllamaExecutable = path.join(eclipseAiRuntimeRoot, 'ollama', 'ollama.exe');
+const labOllamaModels = path.join(eclipseAiRuntimeRoot, 'models', 'ollama');
+
+function isLabOllamaListening() {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host: '127.0.0.1', port: 11435 });
+    const finish = (listening) => {
+      socket.destroy();
+      resolve(listening);
+    };
+    socket.setTimeout(500);
+    socket.once('connect', () => finish(true));
+    socket.once('timeout', () => finish(false));
+    socket.once('error', () => finish(false));
+  });
+}
+
+async function ensureLabOllamaServer() {
+  if (!existsSync(labOllamaExecutable) || await isLabOllamaListening()) return;
+
+  const child = spawn(labOllamaExecutable, ['serve'], {
+    env: {
+      ...process.env,
+      OLLAMA_HOST: '127.0.0.1:11435',
+      OLLAMA_MODELS: labOllamaModels,
+      OLLAMA_KEEP_ALIVE: '5m',
+      OLLAMA_LOAD_TIMEOUT: '15m',
+    },
+    windowsHide: true,
+    shell: false,
+    stdio: 'ignore',
+  });
+  labOllamaProcess = child;
+  child.once('error', () => {
+    if (labOllamaProcess === child) labOllamaProcess = null;
+  });
+  child.once('exit', () => {
+    if (labOllamaProcess === child) labOllamaProcess = null;
+  });
+}
 
 
 function isTrustedOperatorSender(event) {
@@ -81,6 +149,121 @@ ipcMain.handle(EXECUTE_CHANNEL, async (event, request) => {
   }
 });
 
+function parseVoicePayload(output) {
+  try {
+    const payload = JSON.parse(output.trim());
+    if (payload?.ok === false && typeof payload.code === 'string') {
+      const safeErrors = {
+        WHISPER_RUNTIME_MISSING: 'Локальный голосовой runtime не найден. Переустановите Eclipse AI Runtime на диске E:.',
+        WHISPER_RUNTIME_INVALID: 'Путь к локальному голосовому runtime некорректен.',
+        WHISPER_MODEL_MISSING: 'Локальная модель распознавания речи не найдена.',
+        WHISPER_MODEL_INVALID: 'Локальная модель распознавания речи повреждена или несовместима.',
+        WHISPER_START_FAILED: 'Не удалось запустить локальный Whisper runtime.',
+        RUSSIAN_SPEECH_PACK_MISSING: 'Локальный Whisper недоступен, а русский Windows Speech не установлен.',
+        MICROPHONE_UNAVAILABLE: 'Микрофон недоступен. Проверьте разрешения Windows и устройство ввода по умолчанию.',
+        NO_SPEECH_RECOGNIZED: 'Речь не распознана. Нажмите ещё раз и говорите обычным голосом рядом с микрофоном.',
+      };
+      const message = safeErrors[payload.code];
+      if (message) return { ok: false, error: { code: payload.code, message } };
+    }
+    if (!payload || payload.ok !== true || typeof payload.text !== 'string') {
+      return { ok: false, error: { code: 'VOICE_NOT_RECOGNIZED', message: 'Речь не распознана. Попробуйте ещё раз.' } };
+    }
+
+    const text = payload.text.trim().slice(0, 500);
+    if (!text) {
+      return { ok: false, error: { code: 'VOICE_NOT_RECOGNIZED', message: 'Речь не распознана. Попробуйте ещё раз.' } };
+    }
+
+    const parsedConfidence = Number(payload.confidence);
+    const confidence = Number.isFinite(parsedConfidence)
+      ? Math.max(0, Math.min(1, parsedConfidence))
+      : null;
+    return { ok: true, text, confidence };
+  } catch {
+    return { ok: false, error: { code: 'VOICE_INVALID_OUTPUT', message: 'Локальный модуль речи вернул некорректный ответ.' } };
+  }
+}
+
+function runLocalVoiceRecognition() {
+  return new Promise((resolve) => {
+    let stdout = '';
+    let outputBytes = 0;
+    let settled = false;
+
+    const child = spawn('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      voiceScriptPath,
+      '-TimeoutSeconds',
+      '12',
+      '-RuntimeRoot',
+      eclipseAiRuntimeRoot,
+    ], {
+      windowsHide: true,
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(result);
+    };
+
+    const timeout = setTimeout(() => {
+      child.kill();
+      finish({ ok: false, error: { code: 'VOICE_TIMEOUT', message: 'Время ожидания речи истекло.' } });
+    }, VOICE_PROCESS_TIMEOUT_MS);
+
+    const consume = (chunk, capture) => {
+      outputBytes += chunk.length;
+      if (outputBytes > VOICE_OUTPUT_LIMIT_BYTES) {
+        child.kill();
+        finish({ ok: false, error: { code: 'VOICE_OUTPUT_LIMIT', message: 'Локальный модуль речи превысил допустимый объём ответа.' } });
+        return;
+      }
+      if (capture) stdout += chunk.toString('utf8');
+    };
+
+    child.stdout.on('data', (chunk) => consume(chunk, true));
+    child.stderr.on('data', (chunk) => consume(chunk, false));
+    child.on('error', () => {
+      finish({ ok: false, error: { code: 'VOICE_UNAVAILABLE', message: 'Локальное распознавание речи недоступно.' } });
+    });
+    child.on('close', () => finish(parseVoicePayload(stdout)));
+  });
+}
+
+ipcMain.handle(VOICE_LISTEN_CHANNEL, async (event, ...args) => {
+  if (!isTrustedOperatorSender(event)) {
+    return { ok: false, error: { code: 'UNTRUSTED_SENDER', message: 'IPC sender is not trusted' } };
+  }
+  if (args.length !== 0) {
+    return { ok: false, error: { code: 'VOICE_INPUT_REJECTED', message: 'Голосовой канал не принимает параметры.' } };
+  }
+  if (voiceListenInFlight) {
+    return { ok: false, error: { code: 'VOICE_BUSY', message: 'Распознавание уже выполняется.' } };
+  }
+
+  const now = Date.now();
+  if (now - voiceLastStartedAt < VOICE_RATE_LIMIT_MS) {
+    return { ok: false, error: { code: 'VOICE_RATE_LIMITED', message: 'Подождите секунду перед повторным запуском.' } };
+  }
+
+  voiceListenInFlight = true;
+  voiceLastStartedAt = now;
+  try {
+    return await runLocalVoiceRecognition();
+  } finally {
+    voiceListenInFlight = false;
+  }
+});
+
 Menu.setApplicationMenu(null);
 
 function createWindow() {
@@ -89,16 +272,16 @@ function createWindow() {
     height: 860,
     minWidth: 800,
     minHeight: 600,
-    title: 'Eclipse Sentinel',
-    backgroundColor: '#05070A',
+    title: 'Eclipse Ultron',
+    backgroundColor: '#050507',
     frame: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: '#05070A',
-      symbolColor: '#6B7A8A',
+      color: '#050507',
+      symbolColor: '#C7CDD6',
       height: 40,
     },
-    icon: path.join(__dirname, '../public/favicon.svg'),
+    icon: windowIconPath,
     show: false,
     webPreferences: {
       nodeIntegration: false,
@@ -145,12 +328,9 @@ function createWindow() {
 }
 
 function createTray() {
-  // Simple 16x16 icon
-  const icon = nativeImage.createFromDataURL(
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA1ElEQVQ4T2NkoBAwUqifYdAY8B8E/v//z8DIyMjAwMDAwMTExPAfJIeNDdIHMoORkZHhPzZNuNgg/SBDQJpBYtgMwGkzyDCQISDD/mNzFi5xcABB/QCKfBBgYmJi+I/NEFxiID9ADAH5AWQQLhtwGfIfqhakBqIRFEAgQ4jRzMjIyAgyBJshMEOwGQLSBzMEZgg2TdgMgbkemyEwf4LkCBqCbjOlhoBdBXI9uoNJCiRYKJBbUoLYIDUkGQKyGdtQIGgILI5wGYJNP4whIFeD/EisIQAvjYFpM/RLYAAAAABJRU5ErkJggg=='
-  );
+  const icon = nativeImage.createFromPath(windowIconPath).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
-  tray.setToolTip('Eclipse Sentinel');
+  tray.setToolTip('Eclipse Ultron');
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Открыть', click: () => { win.show(); win.focus(); } },
@@ -164,6 +344,7 @@ function createTray() {
 app.whenReady().then(() => {
   createWindow();
   createTray();
+  void ensureLabOllamaServer();
 
   // Global hotkey: Ctrl+Shift+S to toggle window
   globalShortcut.register('CommandOrControl+Shift+S', () => {
@@ -188,6 +369,10 @@ app.on('activate', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  if (labOllamaProcess && !labOllamaProcess.killed) {
+    labOllamaProcess.kill();
+    labOllamaProcess = null;
+  }
   void officeRuntimePromise.then((runtime) => {
     if (runtime) runtime.dispose();
   }).catch(() => {});

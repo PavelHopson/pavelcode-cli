@@ -31,6 +31,31 @@ type SpeechRecognitionWindow = Window & {
   webkitSpeechRecognition?: SpeechRecognitionConstructor;
 };
 
+export type LocalSpeechResult =
+  | { ok: true; text: string; confidence: number | null }
+  | { ok: false; error: { code: string; message: string } };
+
+type UltronVoiceWindow = Window & {
+  ultronVoice?: {
+    listenOnce(): Promise<LocalSpeechResult>;
+  };
+};
+
+export function isLocalSTTSupported(): boolean {
+  return typeof (window as UltronVoiceWindow).ultronVoice?.listenOnce === 'function';
+}
+
+export async function listenOnceLocal(): Promise<LocalSpeechResult> {
+  const bridge = (window as UltronVoiceWindow).ultronVoice;
+  if (!bridge) {
+    return {
+      ok: false,
+      error: { code: 'VOICE_DESKTOP_REQUIRED', message: 'Локальный микрофон доступен только в Eclipse Ultron Desktop.' },
+    };
+  }
+  return bridge.listenOnce();
+}
+
 export function isSpeechSupported(): boolean {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 }

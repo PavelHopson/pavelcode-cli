@@ -1,0 +1,624 @@
+:root {
+  --color-bg: #050507;
+  --color-panel: #0b0d10;
+  --color-card: #15181d;
+  --color-border: #30242a;
+  --color-accent: #ff304a;
+  --color-accent-dim: #a60d24;
+  --color-text-1: #f3f5f7;
+  --color-text-2: #c7cdd6;
+  --color-text-3: #7e858f;
+  --color-live: #45d89a;
+  --ef-gold: #ffb84d;
+  --ef-danger: #ff596c;
+  --ef-panel-raised: #15181d;
+  --ef-line-strong: #49323a;
+  --ultron-bg: #050507;
+  --ultron-panel: #0b0d10;
+  --ultron-raised: #15181d;
+  --ultron-line: #30242a;
+  --ultron-line-hot: #6e2635;
+  --ultron-signal: #ff304a;
+  --ultron-signal-soft: #ff7b89;
+  --ultron-signal-deep: #8e1024;
+  --ultron-silver: #f3f5f7;
+  --ultron-silver-2: #c7cdd6;
+  --ultron-muted: #7e858f;
+  --ultron-success: #45d89a;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--ultron-bg);
+  color: var(--ultron-silver);
+}
+
+::selection { background: rgba(255, 48, 74, 0.24); }
+::-webkit-scrollbar-thumb { background: #3b252d; }
+
+.sentinel-shell[data-brand="ultron"] {
+  background: var(--ultron-bg);
+}
+
+.sentinel-shell[data-brand="ultron"]::before {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 5%, var(--ultron-signal-deep) 24%, var(--ultron-signal) 52%, transparent 96%);
+  opacity: 0.88;
+}
+
+.sentinel-shell[data-brand="ultron"]::after {
+  background-image:
+    linear-gradient(rgba(255, 48, 74, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 48, 74, 0.018) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+
+.sentinel-shell[data-brand="ultron"] :focus-visible {
+  outline: 2px solid rgba(255, 107, 125, 0.9);
+  outline-offset: 2px;
+}
+
+.sentinel-shell[data-brand="ultron"] .sentinel-main { background: rgba(5, 5, 7, 0.95); }
+.sentinel-shell[data-brand="ultron"] .sentinel-header,
+.sentinel-shell[data-brand="ultron"] .sentinel-sidebar { background: rgba(8, 9, 12, 0.97); border-color: var(--ultron-line) !important; }
+.sentinel-shell[data-brand="ultron"] .sentinel-status-rail { border-color: var(--ultron-line) !important; }
+.sentinel-shell[data-brand="ultron"] .surface-switcher { border-color: var(--ultron-line); background: #07080a; }
+.sentinel-shell[data-brand="ultron"] .surface-switcher button[aria-pressed="true"] { background: #28141b; color: var(--ultron-silver); box-shadow: inset 0 0 0 1px rgba(255, 48, 74, 0.18); }
+.sentinel-shell[data-brand="ultron"] .sidebar-primary:hover { border-color: rgba(255, 48, 74, 0.28); }
+
+.sentinel-shell[data-brand="ultron"] .brand-lockup__copy strong,
+.sentinel-shell[data-brand="ultron"] .chat-empty__eyebrow,
+.sentinel-shell[data-brand="ultron"] .usage-guide-eyebrow { color: var(--ultron-signal-soft); }
+.sentinel-shell[data-brand="ultron"] .eclipse-mark__orbit,
+.sentinel-shell[data-brand="ultron"] .eclipse-mark__inner,
+.sentinel-shell[data-brand="ultron"] .eclipse-mark__axis { stroke: var(--ultron-signal); }
+.sentinel-shell[data-brand="ultron"] .eclipse-mark__crescent { fill: #08090c; stroke: var(--ultron-signal-soft); }
+.sentinel-shell[data-brand="ultron"] .eclipse-mark__core { fill: var(--ultron-silver); filter: drop-shadow(0 0 5px rgba(255, 48, 74, 0.78)); }
+.sentinel-shell[data-brand="ultron"] .eclipse-mark__signal { fill: var(--ultron-signal); }
+
+.sentinel-shell[data-brand="ultron"] .settings-dialog,
+.sentinel-shell[data-brand="ultron"] .usage-guide-dialog { border-color: var(--ultron-line-hot); box-shadow: 0 32px 100px -42px rgba(255, 48, 74, 0.42); }
+.sentinel-shell[data-brand="ultron"] .usage-guide-summary,
+.sentinel-shell[data-brand="ultron"] .usage-guide-footer,
+.sentinel-shell[data-brand="ultron"] .usage-guide-header { border-color: var(--ultron-line); }
+.sentinel-shell[data-brand="ultron"] .usage-guide-step-number,
+.sentinel-shell[data-brand="ultron"] .usage-guide-action,
+.sentinel-shell[data-brand="ultron"] .usage-guide-primary { border-color: rgba(255, 48, 74, 0.32); color: var(--ultron-signal-soft); }
+.sentinel-shell[data-brand="ultron"] .usage-guide-primary { background: rgba(255, 48, 74, 0.1); }
+
+.ultron-room {
+  min-height: 100%;
+  overflow: auto;
+  padding: 22px;
+  color: var(--ultron-silver);
+  background:
+    radial-gradient(circle at 52% 4%, rgba(166, 13, 36, 0.13), transparent 30%),
+    linear-gradient(180deg, rgba(17, 9, 13, 0.45), transparent 34%),
+    var(--ultron-bg);
+}
+
+.ultron-room__header,
+.ultron-hud,
+.ultron-cockpit { width: min(1360px, 100%); margin-inline: auto; }
+
+.ultron-room__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 14px;
+}
+
+.ultron-room__eyebrow,
+.ultron-panel-heading span,
+.ultron-plan p,
+.ultron-receipt p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--ultron-signal-soft);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.ultron-room h1 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 650;
+  letter-spacing: -0.045em;
+}
+
+.ultron-room__header > div:first-child > p:last-child {
+  margin: 7px 0 0;
+  color: var(--ultron-muted);
+  font-size: 12px;
+}
+
+.ultron-room__controls { display: flex; gap: 8px; }
+.motion-switch,
+.kill-switch {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid var(--ultron-line);
+  border-radius: 9px;
+  background: rgba(11, 13, 16, 0.92);
+  color: var(--ultron-silver-2);
+  text-align: left;
+  cursor: pointer;
+}
+.motion-switch span,
+.kill-switch span,
+.ultron-hud-state span,
+.ultron-skills button span { display: flex; flex-direction: column; gap: 2px; }
+.motion-switch strong,
+.kill-switch strong { font-size: 10px; letter-spacing: 0.04em; }
+.motion-switch small,
+.kill-switch small,
+.ultron-hud-state small,
+.ultron-skills button small { color: var(--ultron-muted); font-size: 9px; font-weight: 400; }
+.motion-switch[aria-pressed="true"] { border-color: rgba(255, 48, 74, 0.32); color: var(--ultron-signal-soft); }
+.kill-switch { min-width: 190px; border-color: rgba(69, 216, 154, 0.2); color: var(--ultron-success); }
+.kill-switch.is-on { border-color: rgba(255, 48, 74, 0.34); background: rgba(142, 16, 36, 0.12); color: var(--ultron-signal-soft); }
+.kill-switch:disabled { cursor: not-allowed; opacity: 0.68; }
+
+.ultron-hud {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.ultron-hud-state {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border: 1px solid var(--ultron-line);
+  background: rgba(11, 13, 16, 0.9);
+  color: var(--ultron-muted);
+}
+.ultron-hud-state:first-child { border-radius: 9px 0 0 9px; }
+.ultron-hud-state:last-child { border-radius: 0 9px 9px 0; }
+.ultron-hud-state strong { color: var(--ultron-silver); font-size: 10px; }
+.ultron-hud-state[data-tone="live"] { color: var(--ultron-success); }
+.ultron-hud-state[data-tone="warn"] { color: #ffb84d; }
+
+.ultron-cockpit {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.68fr) minmax(420px, 1.48fr) minmax(250px, 0.9fr);
+  align-items: stretch;
+  gap: 10px;
+}
+
+.ultron-skills,
+.ultron-console,
+.ultron-inspector {
+  min-width: 0;
+  border: 1px solid var(--ultron-line);
+  border-radius: 12px;
+  background: rgba(11, 13, 16, 0.94);
+  box-shadow: 0 28px 80px -58px rgba(255, 48, 74, 0.45);
+}
+.ultron-skills,
+.ultron-inspector { padding: 12px; }
+.ultron-console { position: relative; padding: 15px; overflow: hidden; }
+.ultron-console::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 48, 74, 0.035), transparent 32%, transparent 70%, rgba(255, 48, 74, 0.025));
+}
+
+.ultron-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 3px 11px;
+  border-bottom: 1px solid rgba(48, 36, 42, 0.8);
+  margin-bottom: 8px;
+}
+.ultron-panel-heading h2 { margin: 0; color: var(--ultron-silver); font-size: 13px; }
+.ultron-panel-heading > strong { color: var(--ultron-signal-soft); font: 9px ui-monospace, Consolas, monospace; letter-spacing: 0.12em; }
+
+.ultron-skills > button {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ultron-muted);
+  text-align: left;
+  cursor: pointer;
+}
+.ultron-skills > button:hover { background: rgba(255, 48, 74, 0.04); }
+.ultron-skills > button.is-selected { border-color: rgba(255, 48, 74, 0.26); background: rgba(142, 16, 36, 0.12); color: var(--ultron-signal-soft); }
+.ultron-skills button strong { color: var(--ultron-silver-2); font-size: 10px; line-height: 1.35; }
+.ultron-boundary { margin-top: 11px; padding: 10px; border: 1px solid rgba(255, 48, 74, 0.18); border-radius: 7px; background: rgba(142, 16, 36, 0.06); }
+.ultron-boundary strong { display: flex; align-items: center; gap: 5px; color: var(--ultron-signal-soft); font-size: 9px; text-transform: uppercase; }
+.ultron-boundary span { display: block; margin-top: 5px; color: var(--ultron-muted); font: 9px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+
+.ultron-presence {
+  --core-color: var(--ultron-signal);
+  --core-glow: rgba(255, 48, 74, 0.42);
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 5px 0 10px;
+}
+.ultron-presence[data-state="success"] { --core-color: var(--ultron-success); --core-glow: rgba(69, 216, 154, 0.36); }
+.ultron-presence[data-state="approval"] { --core-color: #ff6b7d; --core-glow: rgba(255, 48, 74, 0.48); }
+.ultron-presence[data-state="blocked"] { --core-color: #ff596c; --core-glow: rgba(255, 48, 74, 0.6); }
+.ultron-core { position: relative; width: clamp(150px, 18vw, 214px); aspect-ratio: 1; display: grid; place-items: center; isolation: isolate; }
+.ultron-core__aura,
+.ultron-core__ring,
+.ultron-core__scan { position: absolute; inset: 50%; pointer-events: none; }
+.ultron-core__aura { width: 72%; height: 72%; border-radius: 50%; background: var(--core-glow); filter: blur(30px); opacity: 0.36; transform: translate(-50%, -50%) scale(0.86); }
+.ultron-core__ring { border: 1px solid color-mix(in srgb, var(--core-color) 52%, transparent); border-radius: 50%; transform: translate(-50%, -50%); }
+.ultron-core__ring--outer { width: 96%; height: 96%; border-style: dashed; opacity: 0.44; }
+.ultron-core__ring--middle { width: 76%; height: 76%; border-left-color: transparent; border-right-color: transparent; opacity: 0.72; }
+.ultron-core__ring--inner { width: 57%; height: 57%; border-top-color: transparent; opacity: 0.7; }
+.ultron-core__scan { width: 68%; height: 1px; left: 16%; top: 50%; inset-inline: 16%; background: linear-gradient(90deg, transparent, var(--core-color), transparent); box-shadow: 0 0 10px var(--core-color); opacity: 0; transform: translateY(-44px); }
+.ultron-core__glyph { position: relative; z-index: 2; width: 69%; overflow: visible; filter: drop-shadow(0 0 14px var(--core-glow)); }
+.ultron-core__frame,
+.ultron-core__iris,
+.ultron-core__blade,
+.ultron-core__axis { fill: none; stroke: var(--core-color); vector-effect: non-scaling-stroke; }
+.ultron-core__frame { stroke-width: 1.1; opacity: 0.46; }
+.ultron-core__iris { fill: rgba(17, 9, 13, 0.86); stroke-width: 1.5; }
+.ultron-core__blade { fill: rgba(255, 48, 74, 0.08); stroke-width: 1.1; transform-box: fill-box; transform-origin: center; }
+.ultron-core__axis { stroke-width: 1; opacity: 0.48; }
+.ultron-core__eye { fill: #060609; stroke: var(--core-color); stroke-width: 1.5; }
+.ultron-core__eye-hot { fill: var(--ultron-silver); filter: drop-shadow(0 0 5px var(--core-color)); }
+.ultron-presence__copy { display: grid; justify-items: center; gap: 2px; text-align: center; }
+.ultron-presence__copy > span { color: var(--core-color); font: 700 10px ui-monospace, Consolas, monospace; letter-spacing: 0.15em; text-transform: uppercase; }
+.ultron-presence__copy strong { color: var(--ultron-muted); font-size: 9px; font-weight: 500; }
+
+.ultron-flow { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 10px 0 13px; border-top: 1px solid var(--ultron-line); }
+.ultron-flow span { display: flex; align-items: center; gap: 5px; color: var(--ultron-muted); font-size: 8px; }
+.ultron-flow i { width: 18px; height: 18px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--ultron-line); border-radius: 50%; font-style: normal; }
+.ultron-flow span[data-state="current"] { color: var(--ultron-silver); }
+.ultron-flow span[data-state="current"] i { border-color: var(--ultron-signal); color: var(--ultron-signal-soft); box-shadow: 0 0 12px rgba(255, 48, 74, 0.18); }
+.ultron-flow span[data-state="done"] { color: var(--ultron-success); }
+
+.ultron-command-field { position: relative; z-index: 1; display: grid; gap: 6px; color: var(--ultron-silver-2); font-size: 10px; }
+.ultron-command-field textarea { min-height: 70px; resize: vertical; padding: 11px; border: 1px solid var(--ultron-line); border-radius: 8px; background: #07080a; color: var(--ultron-silver); font: 11px/1.55 inherit; caret-color: var(--ultron-signal); }
+.ultron-command-field textarea:hover { border-color: #4a3039; }
+.ultron-command-field textarea:disabled { opacity: 0.56; cursor: wait; }
+.ultron-command-field small { color: var(--ultron-muted); font-size: 8px; text-align: right; }
+.ultron-command-tools { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.ultron-command-tools > span { display: flex; align-items: center; gap: 5px; color: var(--ultron-muted); font: 8px ui-monospace, Consolas, monospace; }
+.voice-trigger { min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; border: 1px solid rgba(255, 48, 74, 0.3); border-radius: 7px; background: rgba(142, 16, 36, 0.1); color: var(--ultron-signal-soft); font-size: 9px; cursor: pointer; }
+.voice-trigger:disabled { border-color: var(--ultron-line); color: var(--ultron-muted); background: transparent; cursor: not-allowed; opacity: 0.62; }
+.voice-feedback { position: relative; z-index: 1; margin: 7px 0 0; padding: 7px 9px; border-radius: 6px; font-size: 9px; }
+.voice-feedback.is-success { color: var(--ultron-success); background: rgba(69, 216, 154, 0.06); }
+.voice-feedback.is-error { color: var(--ultron-signal-soft); background: rgba(142, 16, 36, 0.1); }
+
+.ultron-actions { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.ultron-actions p { margin: 0; color: var(--ultron-muted); font-size: 8px; }
+.ultron-room .primary-action { min-height: 38px; padding: 0 15px; border: 1px solid rgba(255, 48, 74, 0.36); border-radius: 7px; background: linear-gradient(180deg, rgba(255, 48, 74, 0.18), rgba(142, 16, 36, 0.14)); color: var(--ultron-silver); font-size: 10px; font-weight: 650; cursor: pointer; box-shadow: inset 0 1px rgba(255, 255, 255, 0.035); }
+.ultron-room .primary-action:hover:not(:disabled) { border-color: rgba(255, 107, 125, 0.7); background-color: rgba(255, 48, 74, 0.16); }
+.ultron-room .primary-action:disabled { opacity: 0.42; cursor: not-allowed; }
+
+.ultron-empty-state { min-height: 210px; display: grid; place-content: center; justify-items: center; gap: 8px; padding: 18px; color: var(--ultron-muted); text-align: center; }
+.ultron-empty-state svg { color: #5d333d; }
+.ultron-empty-state strong { color: var(--ultron-silver-2); font-size: 10px; }
+.ultron-empty-state span { max-width: 190px; font-size: 9px; line-height: 1.5; }
+.ultron-plan { display: grid; gap: 7px; }
+.ultron-plan section,
+.ultron-receipt,
+.ultron-execution { padding: 10px; border: 1px solid var(--ultron-line); border-radius: 7px; background: #08090b; }
+.ultron-plan ol,
+.ultron-plan ul { margin: 0; padding-left: 16px; color: var(--ultron-silver-2); font-size: 9px; line-height: 1.65; }
+.ultron-execution { display: flex; align-items: center; gap: 8px; margin-top: 7px; color: var(--ultron-signal-soft); }
+.ultron-execution > div { display: grid; gap: 2px; }
+.ultron-execution strong { color: var(--ultron-silver); font-size: 9px; }
+.ultron-execution span { color: var(--ultron-muted); font-size: 8px; }
+.ultron-execution.is-error { border-color: rgba(255, 48, 74, 0.34); background: rgba(142, 16, 36, 0.08); }
+.ultron-receipt { margin-top: 7px; border-color: rgba(69, 216, 154, 0.22); }
+.ultron-receipt__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.ultron-receipt__heading strong { display: block; color: var(--ultron-silver); font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+.ultron-receipt__heading > span { flex: 0 0 auto; padding: 3px 5px; border: 1px solid var(--ultron-line); border-radius: 4px; color: var(--ultron-muted); font: 8px ui-monospace, Consolas, monospace; }
+.ultron-receipt pre { max-height: 170px; overflow: auto; white-space: pre-wrap; color: var(--ultron-silver-2); font: 8px/1.5 ui-monospace, Consolas, monospace; }
+.ultron-receipt > small { color: var(--ultron-muted); font-size: 8px; overflow-wrap: anywhere; }
+.ultron-receipt__actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.ultron-receipt__actions button { min-height: 30px; display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; border: 1px solid var(--ultron-line); border-radius: 6px; background: var(--ultron-panel); color: var(--ultron-silver-2); font-size: 8px; cursor: pointer; }
+.ultron-receipt__actions button:disabled { opacity: 0.42; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ultron-room[data-motion="on"] .ultron-core__ring--outer { animation: ultron-turn 20s linear infinite; }
+  .ultron-room[data-motion="on"] .ultron-core__ring--middle { animation: ultron-turn-reverse 11s linear infinite; }
+  .ultron-room[data-motion="on"] .ultron-core__ring--inner { animation: ultron-turn 7s linear infinite; }
+  .ultron-room[data-motion="on"] .ultron-core__aura { animation: ultron-breathe 3.2s ease-in-out infinite; }
+  .ultron-room[data-motion="on"] .ultron-core__blade { animation: ultron-blade 9s linear infinite; }
+  .ultron-room[data-motion="on"][data-stage="listening"] .ultron-core__scan,
+  .ultron-room[data-motion="on"][data-stage="planning"] .ultron-core__scan,
+  .ultron-room[data-motion="on"][data-stage="executing"] .ultron-core__scan { opacity: 0.72; animation: ultron-scan 1.7s ease-in-out infinite; }
+  .ultron-room[data-motion="on"][data-stage="listening"] .voice-trigger svg,
+  .ultron-room[data-motion="on"] .ultron-execution > svg { animation: ultron-turn 1s linear infinite; }
+}
+
+@keyframes ultron-turn { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes ultron-turn-reverse { to { transform: translate(-50%, -50%) rotate(-360deg); } }
+@keyframes ultron-breathe { 50% { opacity: 0.58; transform: translate(-50%, -50%) scale(1); } }
+@keyframes ultron-blade { to { transform: rotate(360deg); } }
+@keyframes ultron-scan { 0%, 100% { transform: translateY(-44px); } 50% { transform: translateY(44px); } }
+
+@media (max-width: 1250px) {
+  .ultron-cockpit { grid-template-columns: minmax(190px, 0.62fr) minmax(430px, 1.38fr); }
+  .ultron-inspector { grid-column: 1 / -1; }
+  .ultron-empty-state { min-height: 120px; }
+}
+
+@media (max-width: 980px) {
+  .ultron-room { padding: 14px; }
+  .ultron-room__header { flex-direction: column; }
+  .ultron-room__controls { width: 100%; }
+  .motion-switch,
+  .kill-switch { flex: 1; }
+  .ultron-cockpit { grid-template-columns: 1fr; }
+  .ultron-inspector { grid-column: auto; }
+  .ultron-skills { order: 2; }
+  .ultron-console { order: 1; }
+  .ultron-inspector { order: 3; }
+}
+
+@media (max-width: 620px) {
+  .ultron-room__header { gap: 10px; }
+  .ultron-room__header > div:first-child > p:last-child { display: none; }
+  .ultron-room__controls { flex-direction: row; gap: 6px; }
+  .motion-switch,
+  .kill-switch { min-width: 0; padding: 7px 9px; }
+  .motion-switch small,
+  .kill-switch small { display: none; }
+  .ultron-hud { grid-template-columns: 1fr 1fr; }
+  .ultron-hud-state:first-child,
+  .ultron-hud-state:last-child { border-radius: 7px; }
+  .ultron-hud-state { border-radius: 7px; }
+  .ultron-core { width: 138px; }
+  .ultron-presence { padding-top: 0; }
+  .ultron-flow { grid-template-columns: 1fr 1fr; }
+  .ultron-command-tools,
+  .ultron-actions { align-items: stretch; flex-direction: column; }
+  .voice-trigger,
+  .ultron-room .primary-action { width: 100%; justify-content: center; }
+  .ultron-command-tools > span { justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ultron-room *,
+  .ultron-room *::before,
+  .ultron-room *::after { animation: none !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Persistent, explicit contact surface. The microphone never starts on hover or launch. */
+.ultron-contact {
+  position: fixed;
+  right: 24px;
+  bottom: 22px;
+  z-index: 60;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.ultron-contact__launcher {
+  position: relative;
+  min-width: 190px;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px 7px 8px;
+  border: 1px solid rgba(255, 48, 74, 0.38);
+  border-radius: 14px;
+  background: rgba(8, 9, 12, 0.97);
+  color: var(--ultron-silver);
+  box-shadow: 0 18px 54px -32px rgba(255, 48, 74, 0.72), 0 12px 34px -24px rgba(0, 0, 0, 0.94);
+  cursor: pointer;
+  isolation: isolate;
+}
+
+.ultron-contact__launcher::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border: 1px solid rgba(255, 123, 137, 0.5);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+
+.ultron-contact__launcher:hover::after,
+.ultron-contact__launcher[aria-expanded="true"]::after { opacity: 1; }
+.ultron-contact__launcher > svg { color: var(--ultron-signal-soft); }
+
+.ultron-contact__launcher-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.ultron-contact__launcher-copy strong { font-size: 11px; line-height: 1.2; letter-spacing: 0.02em; }
+.ultron-contact__launcher-copy small { color: var(--ultron-muted); font-size: 9px; line-height: 1.25; }
+
+.ultron-avatar {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 123, 137, 0.34);
+  border-radius: 11px;
+  background: #050507;
+}
+
+.ultron-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transform: scale(1.05);
+}
+
+.ultron-avatar > span {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #08090c;
+  border-radius: 50%;
+  background: var(--ultron-success);
+}
+
+.ultron-avatar--panel { width: 48px; height: 48px; border-radius: 12px; }
+
+.ultron-contact__panel {
+  width: min(360px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--ultron-line-hot);
+  border-radius: 15px;
+  background: rgba(8, 9, 12, 0.985);
+  color: var(--ultron-silver);
+  box-shadow: 0 30px 84px -38px rgba(255, 48, 74, 0.5), 0 24px 74px -34px rgba(0, 0, 0, 0.94);
+  transform-origin: bottom right;
+}
+
+.ultron-contact__header {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  border-bottom: 1px solid var(--ultron-line);
+}
+
+.ultron-contact__header p,
+.ultron-contact__header h2 { margin: 0; }
+.ultron-contact__header p { color: var(--ultron-signal-soft); font: 700 8px ui-monospace, Consolas, monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.ultron-contact__header h2 { margin-top: 3px; font-size: 15px; font-weight: 670; }
+.ultron-contact__header > button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ultron-muted);
+  cursor: pointer;
+}
+.ultron-contact__header > button:hover { border-color: var(--ultron-line); color: var(--ultron-silver); }
+
+.ultron-contact__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  margin: 12px 14px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--ultron-line);
+  border-radius: 8px;
+  color: var(--ultron-muted);
+  font-size: 9px;
+}
+.ultron-contact__status[data-tone="listening"] { border-color: rgba(255, 48, 74, 0.34); color: var(--ultron-signal-soft); }
+.ultron-contact__status[data-tone="success"] { border-color: rgba(69, 216, 154, 0.28); color: var(--ultron-success); }
+.ultron-contact__status[data-tone="error"] { border-color: rgba(255, 48, 74, 0.34); background: rgba(142, 16, 36, 0.08); color: var(--ultron-signal-soft); }
+
+.ultron-contact__voice {
+  width: calc(100% - 28px);
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 9px 14px 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 48, 74, 0.34);
+  border-radius: 10px;
+  background: rgba(142, 16, 36, 0.1);
+  color: var(--ultron-silver);
+  text-align: left;
+  cursor: pointer;
+}
+.ultron-contact__voice:hover:not(:disabled) { border-color: rgba(255, 123, 137, 0.68); background: rgba(142, 16, 36, 0.16); }
+.ultron-contact__voice:disabled { opacity: 0.52; cursor: not-allowed; }
+.ultron-contact__voice-icon { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid rgba(255, 48, 74, 0.38); border-radius: 50%; color: var(--ultron-signal-soft); }
+.ultron-contact__voice > span:last-child { min-width: 0; display: grid; gap: 3px; }
+.ultron-contact__voice strong { font-size: 11px; }
+.ultron-contact__voice small { color: var(--ultron-muted); font-size: 8px; line-height: 1.35; }
+
+.ultron-contact__routes { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 9px 14px 12px; }
+.ultron-contact__routes button {
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid var(--ultron-line);
+  border-radius: 8px;
+  background: #0b0d10;
+  color: var(--ultron-muted);
+  text-align: left;
+  cursor: pointer;
+}
+.ultron-contact__routes button:hover,
+.ultron-contact__routes button[aria-current="page"] { border-color: rgba(255, 48, 74, 0.3); color: var(--ultron-signal-soft); }
+.ultron-contact__routes button > span { min-width: 0; display: grid; gap: 2px; }
+.ultron-contact__routes strong { color: var(--ultron-silver-2); font-size: 9px; }
+.ultron-contact__routes small { overflow: hidden; color: var(--ultron-muted); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.ultron-contact footer { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-top: 1px solid var(--ultron-line); color: var(--ultron-muted); font-size: 8px; line-height: 1.45; }
+.ultron-contact footer svg { flex: 0 0 auto; color: var(--ultron-success); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ultron-contact__panel { animation: ultron-contact-enter 180ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+  .ultron-contact[data-state="listening"] .ultron-avatar > span,
+  .ultron-contact[data-state="listening"] .ultron-contact__voice-icon { animation: ultron-contact-pulse 1.2s ease-in-out infinite; }
+}
+
+@keyframes ultron-contact-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ultron-contact-pulse { 50% { opacity: 0.5; transform: scale(0.92); } }
+
+@media (max-width: 620px) {
+  .ultron-contact { right: 12px; bottom: 12px; }
+  .ultron-contact__launcher { min-width: 58px; width: 58px; grid-template-columns: 42px; padding: 7px; }
+  .ultron-contact__launcher-copy,
+  .ultron-contact__launcher > svg { display: none; }
+  .ultron-contact__panel { width: min(360px, calc(100vw - 24px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ultron-contact *,
+  .ultron-contact *::before,
+  .ultron-contact *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .ultron-contact__panel { animation: ultron-contact-fade 120ms ease both; transform: none; }
+}
+
+@keyframes ultron-contact-fade { from { opacity: 0; } to { opacity: 1; } }

@@ -58,7 +58,7 @@ export function executeReadOnlyPlan(plan: VoicePlan): string[] {
     return ['Runtime: dashboard sandbox', 'Execution: read-only', 'Voice I/O: not attested'];
   }
   if (plan.skill.id === 'memory.preview') {
-    return ['# Sentinel memory proposal', '', `- Command: ${plan.command}`, '- Status: preview only'];
+    return ['# Ultron memory proposal', '', `- Command: ${plan.command}`, '- Status: preview only'];
   }
   return VOICE_SKILL_ALLOWLIST.map((skill) => `${skill.id}: allowed (${skill.effect})`);
 }

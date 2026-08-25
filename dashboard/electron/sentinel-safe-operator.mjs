@@ -208,7 +208,7 @@ function executeSkill(skillId, command, runtimeSnapshot) {
     return {
       summary: 'Предпросмотр памяти создан без сохранения.',
       speech: 'Предпросмотр памяти готов. Ничего не сохранено.',
-      lines: ['# Sentinel memory proposal', '', `- Command: ${command}`, '- Status: preview only', '- Persistence: blocked'],
+      lines: ['# Ultron memory proposal', '', `- Command: ${command}`, '- Status: preview only', '- Persistence: blocked'],
     }
   }
   if (skillId === 'skills.status') {

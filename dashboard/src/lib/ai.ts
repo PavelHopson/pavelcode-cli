@@ -12,13 +12,30 @@ export interface ChatSession {
 }
 
 export const MODELS = [
-  { id: 'qwen3:32b', name: 'Qwen 3 32B', desc: 'Мощная, локальная' },
-  { id: 'qwen3:8b', name: 'Qwen 3 8B', desc: 'Быстрая, локальная' },
-  { id: 'llama3:8b', name: 'Llama 3 8B', desc: 'Meta, локальная' },
-  { id: 'deepseek-coder-v2:16b', name: 'DeepSeek Coder', desc: 'Для кода' },
+  { id: 'qwen3:8b', name: 'Qwen 3 8B', desc: 'Быстрая · основной локальный профиль', endpoint: 'primary', risk: 'standard' },
+  { id: 'qwen3:32b', name: 'Qwen 3 32B', desc: 'Мощная · основной локальный профиль', endpoint: 'primary', risk: 'standard' },
+  { id: 'llama3:8b', name: 'Llama 3 8B', desc: 'Meta · основной локальный профиль', endpoint: 'primary', risk: 'standard' },
+  { id: 'deepseek-coder-v2:16b', name: 'DeepSeek Coder', desc: 'Специализация на коде', endpoint: 'primary', risk: 'standard' },
+  {
+    id: 'huihui_ai/qwen3.8-abliterated:27b',
+    name: 'HuiHui Qwen3.8 27B · Lab',
+    desc: 'Экспериментальная · только изолированный чат',
+    endpoint: 'lab',
+    risk: 'experimental',
+  },
 ] as const;
 
-const OLLAMA_URL = 'http://localhost:11434/v1/chat/completions';
+export type ModelDefinition = (typeof MODELS)[number];
+
+const OLLAMA_ENDPOINTS = {
+  primary: 'http://127.0.0.1:11434',
+  lab: 'http://127.0.0.1:11435',
+} as const;
+
+export function getModelDefinition(model?: string): ModelDefinition {
+  const requested = model || getSelectedModel();
+  return MODELS.find((entry) => entry.id === requested) || MODELS[0];
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -45,6 +62,7 @@ export function getSelectedModel(): string {
 }
 
 export function setSelectedModel(id: string) {
+  if (!MODELS.some((model) => model.id === id)) return;
   localStorage.setItem('sentinel-model', id);
 }
 
@@ -75,16 +93,22 @@ export async function sendMessage(
   signal?: AbortSignal,
   model?: string,
 ): Promise<void> {
-  const resp = await fetch(OLLAMA_URL, {
+  const selected = getModelDefinition(model);
+  const providerUrl = OLLAMA_ENDPOINTS[selected.endpoint];
+  const systemPrompt = selected.risk === 'experimental'
+    ? 'Ты — Eclipse Ultron Lab, изолированный локальный исследовательский чат. У тебя нет инструментов, shell, доступа к файлам, сети, секретам, установке или deployment. Не заявляй о выполненных действиях. Отделяй факты от предположений и предупреждай о непроверяемых или опасных утверждениях. Поддерживаешь русский и английский.'
+    : 'Ты — Eclipse Ultron, локальный AI-оператор Eclipse Forge для разработки, автоматизации и кодинга. Отвечай чётко, по делу, отделяй факты от предположений и не заявляй о действиях без receipt. Поддерживаешь русский и английский. Используй markdown для форматирования кода.';
+
+  const resp = await fetch(`${providerUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ollama',
     },
     body: JSON.stringify({
-      model: model || getSelectedModel(),
+      model: selected.id,
       messages: [
-        { role: 'system', content: 'Ты — Eclipse Sentinel, AI-оператор для разработки, автоматизации и кодинга. Отвечай чётко, по делу. Поддерживаешь русский и английский. Используй markdown для форматирования кода.' },
+        { role: 'system', content: systemPrompt },
         ...messages,
       ],
       stream: true,
@@ -131,22 +155,24 @@ export async function checkProviderStatus(model?: string): Promise<{
   provider: string; model: string; healthy: boolean; latency: number;
 }> {
   const m = model || getSelectedModel();
+  const selected = getModelDefinition(m);
+  const providerUrl = OLLAMA_ENDPOINTS[selected.endpoint];
   const start = performance.now();
   try {
-    const resp = await fetch('http://localhost:11434/api/tags');
+    const resp = await fetch(`${providerUrl}/api/tags`);
     if (!resp.ok) {
-      return { provider: 'Ollama (локально)', model: m, healthy: false, latency: Math.round(performance.now() - start) };
+      return { provider: selected.endpoint === 'lab' ? 'Ollama Lab (локально)' : 'Ollama (локально)', model: m, healthy: false, latency: Math.round(performance.now() - start) };
     }
     const data: unknown = await resp.json();
     const models = providerModelNames(data);
     const hasModel = models.some((n: string) => n.startsWith(m.split(':')[0]));
     return {
-      provider: 'Ollama (локально)',
+      provider: selected.endpoint === 'lab' ? 'Ollama Lab (локально)' : 'Ollama (локально)',
       model: m,
       healthy: resp.ok && hasModel,
       latency: Math.round(performance.now() - start),
     };
   } catch {
-    return { provider: 'Ollama (локально)', model: m, healthy: false, latency: -1 };
+    return { provider: selected.endpoint === 'lab' ? 'Ollama Lab (локально)' : 'Ollama (локально)', model: m, healthy: false, latency: -1 };
   }
 }

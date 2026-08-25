@@ -1,8 +1,8 @@
 {
   "name": "eclipse-sentinel",
   "private": true,
-  "version": "1.1.0",
-  "description": "Eclipse Sentinel — AI operator desktop app",
+  "version": "1.2.0",
+  "description": "Eclipse Ultron — local-first AI command center powered by Sentinel runtime",
   "author": "Eclipse Forge <hello@eclipseforge.dev>",
   "main": "electron/main.cjs",
   "type": "module",
@@ -10,15 +10,17 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "assets:brand": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-installer-brand-assets.ps1",
     "electron:dev": "vite & sleep 2 && electron .",
-    "electron:build": "npm run build && electron-builder",
+    "electron:build": "npm run assets:brand && npm run build && electron-builder --config.electronDist=node_modules/electron/dist",
     "lint": "eslint ."
   },
   "build": {
     "appId": "dev.eclipseforge.sentinel",
-    "productName": "Eclipse Sentinel",
+    "productName": "Eclipse Ultron",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
@@ -32,11 +34,40 @@
           "*.mjs",
           "*.ps1"
         ]
+      },
+      {
+        "from": "build/eclipse-sentinel.ico",
+        "to": "brand/eclipse-sentinel.ico"
+      },
+      {
+        "from": "../scripts/sentinel-stt.ps1",
+        "to": "voice/sentinel-stt.ps1"
       }
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/favicon.svg"
+      "icon": "build/eclipse-sentinel.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Eclipse Ultron",
+      "installerLanguages": [
+        "ru_RU",
+        "en_US"
+      ],
+      "multiLanguageInstaller": true,
+      "installerIcon": "build/eclipse-sentinel.ico",
+      "uninstallerIcon": "build/eclipse-sentinel.ico",
+      "installerHeader": "build/installerHeader.bmp",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "include": "build/installer.nsh",
+      "artifactName": "Eclipse-Ultron-${version}-Setup.${ext}"
     },
     "mac": {
       "target": "dmg"

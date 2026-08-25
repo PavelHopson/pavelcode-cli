@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Ban,
   Check,
@@ -6,25 +6,30 @@ import {
   FileDiff,
   LoaderCircle,
   LockKeyhole,
+  Mic,
   MicOff,
+  Radio,
   ShieldCheck,
   Speaker,
   Square,
   TerminalSquare,
   Volume2,
+  Waves,
 } from 'lucide-react';
 import { executeOperatorPlan, getOperatorTransport, type OperatorReceipt } from '../lib/operatorClient';
-import { isTTSSupported, speak, stopSpeaking } from '../lib/voice';
-import {
-  buildVoicePlan,
-  VOICE_SKILL_ALLOWLIST,
-  type VoicePlan,
-  type VoiceSkillId,
-} from '../lib/voiceCommandPolicy';
+import { isLocalSTTSupported, isTTSSupported, listenOnceLocal, speak, stopSpeaking } from '../lib/voice';
+import { buildVoicePlan, VOICE_SKILL_ALLOWLIST, type VoicePlan, type VoiceSkillId } from '../lib/voiceCommandPolicy';
+import { UltronCore, type UltronCoreState } from './UltronCore';
 
 type Stage = 'command' | 'plan' | 'approved' | 'executing' | 'receipt' | 'error';
 
-const FLOW_STAGES: Stage[] = ['command', 'plan', 'approved', 'receipt'];
+const MOTION_STORAGE_KEY = 'ultron-motion-enabled-v1';
+const FLOW_STAGES = ['Команда', 'План', 'Подтверждение', 'Receipt'];
+
+function readMotionPreference() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  return localStorage.getItem(MOTION_STORAGE_KEY) !== '0';
+}
 
 export function VoiceCommandRoom() {
   const [skillId, setSkillId] = useState<VoiceSkillId>('workspace.status');
@@ -35,16 +40,18 @@ export function VoiceCommandRoom() {
   const [approvedAt, setApprovedAt] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<OperatorReceipt | null>(null);
   const [error, setError] = useState('');
+  const [voiceError, setVoiceError] = useState('');
+  const [voiceConfidence, setVoiceConfidence] = useState<number | null>(null);
+  const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [motionEnabled, setMotionEnabled] = useState(readMotionPreference);
   const transport = getOperatorTransport();
-  const selectedSkill = useMemo(
-    () => VOICE_SKILL_ALLOWLIST.find((skill) => skill.id === skillId)!,
-    [skillId],
-  );
+  const localVoiceAvailable = isLocalSTTSupported();
+  const selectedSkill = useMemo(() => VOICE_SKILL_ALLOWLIST.find((skill) => skill.id === skillId)!, [skillId]);
 
   useEffect(() => () => stopSpeaking(), []);
 
-  const reset = () => {
+  const clearRun = () => {
     stopSpeaking();
     setPlan(null);
     setReceipt(null);
@@ -88,6 +95,24 @@ export function VoiceCommandRoom() {
     }
   };
 
+  const listenOnce = async () => {
+    if (!localVoiceAvailable || listening || stage === 'executing') return;
+    stopSpeaking();
+    setSpeaking(false);
+    setVoiceError('');
+    setVoiceConfidence(null);
+    setListening(true);
+    const result = await listenOnceLocal();
+    setListening(false);
+    if (!result.ok) {
+      setVoiceError(result.error.message);
+      return;
+    }
+    clearRun();
+    setCommand(result.text);
+    setVoiceConfidence(result.confidence);
+  };
+
   const speakSummary = async () => {
     if (!receipt || speaking || !isTTSSupported()) return;
     setSpeaking(true);
@@ -98,44 +123,71 @@ export function VoiceCommandRoom() {
     }
   };
 
-  const currentStep = stage === 'executing' || stage === 'error'
-    ? 2
-    : Math.max(0, FLOW_STAGES.indexOf(stage));
+  const setMotion = () => {
+    const next = !motionEnabled;
+    setMotionEnabled(next);
+    localStorage.setItem(MOTION_STORAGE_KEY, next ? '1' : '0');
+  };
+
+  const coreState: UltronCoreState = listening
+    ? 'listening'
+    : speaking
+      ? 'speaking'
+      : stage === 'executing'
+        ? 'executing'
+        : stage === 'error'
+          ? 'blocked'
+          : stage === 'receipt'
+            ? 'success'
+            : stage === 'plan' || stage === 'approved'
+              ? 'approval'
+              : 'idle';
+
+  const currentStep = stage === 'command' ? 0
+    : stage === 'plan' ? 1
+      : stage === 'approved' || stage === 'executing' || stage === 'error' ? 2
+        : 3;
 
   return (
-    <section className="voice-room" aria-labelledby="voice-command-title">
-      <header className="voice-room__header">
+    <section className="ultron-room" data-motion={motionEnabled ? 'on' : 'off'} data-stage={coreState} aria-labelledby="ultron-command-title">
+      <header className="ultron-room__header">
         <div>
-          <p className="voice-room__eyebrow">Sentinel local operator · first working slice</p>
-          <h1 id="voice-command-title">Voice Command Room</h1>
-          <p>Один видимый read-only handler: plan → approval → STOP release → receipt → ручное озвучивание.</p>
+          <p className="ultron-room__eyebrow"><Radio size={13} /> Eclipse Forge · Ultron Core</p>
+          <h1 id="ultron-command-title">Командный центр</h1>
+          <p>Одна команда. Видимый план. Ручное разрешение. Проверяемый результат.</p>
         </div>
-        <button
-          className={`kill-switch ${killSwitch ? 'is-on' : ''}`}
-          type="button"
-          aria-pressed={killSwitch}
-          disabled={stage !== 'approved'}
-          onClick={() => setKillSwitch((value) => !value)}
-        >
-          <Ban size={16} />
-          <span>
-            <strong>{killSwitch ? 'STOP включён' : 'Разрешён один запуск'}</strong>
-            <small>{stage === 'approved' ? 'Нажмите, чтобы изменить' : 'Сначала подтвердите план'}</small>
-          </span>
-        </button>
+        <div className="ultron-room__controls">
+          <button className="motion-switch" type="button" aria-pressed={motionEnabled} onClick={setMotion}>
+            <Waves size={15} />
+            <span><strong>Motion {motionEnabled ? 'ON' : 'OFF'}</strong><small>Анимация ядра</small></span>
+          </button>
+          <button
+            className={`kill-switch ${killSwitch ? 'is-on' : ''}`}
+            type="button"
+            aria-pressed={killSwitch}
+            disabled={stage !== 'approved'}
+            onClick={() => setKillSwitch((value) => !value)}
+          >
+            <Ban size={16} />
+            <span>
+              <strong>{killSwitch ? 'STOP активен' : 'Разрешён один запуск'}</strong>
+              <small>{stage === 'approved' ? 'Переключите вручную' : 'Выполнение заблокировано'}</small>
+            </span>
+          </button>
+        </div>
       </header>
 
-      <div className="voice-hud" aria-label="Состояние operator-контура">
-        <HudState icon={<MicOff size={15} />} label="Микрофон" value="CLI PTT отдельно" tone="safe" />
-        <HudState icon={<Speaker size={15} />} label="TTS" value={isTTSSupported() ? 'Ручной запуск' : 'Недоступен'} tone="safe" />
-        <HudState icon={<LockKeyhole size={15} />} label="Контур" value={transport === 'electron-ipc' ? 'Desktop IPC' : 'Browser preview'} tone={transport === 'electron-ipc' ? 'live' : 'warn'} />
-        <HudState icon={<ShieldCheck size={15} />} label="Эффект" value="Read-only" tone="live" />
+      <div className="ultron-hud" aria-label="Состояние безопасного контура">
+        <HudState icon={localVoiceAvailable ? <Mic size={15} /> : <MicOff size={15} />} label="Голос" value={localVoiceAvailable ? 'Whisper · offline' : 'Только Desktop'} tone={localVoiceAvailable ? 'live' : 'safe'} />
+        <HudState icon={<Speaker size={15} />} label="Ответ" value={isTTSSupported() ? 'Ручной TTS' : 'Недоступен'} tone="safe" />
+        <HudState icon={<LockKeyhole size={15} />} label="Транспорт" value={transport === 'electron-ipc' ? 'Trusted IPC' : 'Browser preview'} tone={transport === 'electron-ipc' ? 'live' : 'warn'} />
+        <HudState icon={<ShieldCheck size={15} />} label="Полномочия" value="Read-only" tone="live" />
       </div>
 
-      <div className="voice-room__grid">
-        <aside className="skill-panel" aria-labelledby="skill-allowlist-title">
-          <div className="panel-heading">
-            <div><span>Allowlist</span><h2 id="skill-allowlist-title">Разрешённые навыки</h2></div>
+      <div className="ultron-cockpit">
+        <aside className="ultron-skills" aria-labelledby="ultron-skills-title">
+          <div className="ultron-panel-heading">
+            <div><span>Контур доступа</span><h2 id="ultron-skills-title">Навыки</h2></div>
             <strong>{VOICE_SKILL_ALLOWLIST.length}</strong>
           </div>
           {VOICE_SKILL_ALLOWLIST.map((skill) => (
@@ -144,50 +196,79 @@ export function VoiceCommandRoom() {
               type="button"
               className={skill.id === skillId ? 'is-selected' : ''}
               aria-pressed={skill.id === skillId}
-              onClick={() => {
-                setSkillId(skill.id);
-                reset();
-              }}
+              onClick={() => { setSkillId(skill.id); clearRun(); }}
             >
               <Check size={13} />
               <span><strong>{skill.label}</strong><small>{skill.description}</small></span>
             </button>
           ))}
-          <div className="blocked-skills">
-            <strong>Заблокировано</strong>
+          <div className="ultron-boundary">
+            <strong><LockKeyhole size={12} /> Жёсткая граница</strong>
             <span>shell · write · network · install · deploy · secrets</span>
           </div>
         </aside>
 
-        <main className="command-flow" aria-busy={stage === 'executing'}>
-          <div className="flow-steps" aria-label="Этапы команды">
-            {['Команда', 'План', 'Approval', 'Receipt'].map((label, index) => (
+        <main className="ultron-console" aria-busy={stage === 'executing' || listening}>
+          <UltronCore state={coreState} motionEnabled={motionEnabled} />
+
+          <div className="ultron-flow" aria-label="Этапы команды">
+            {FLOW_STAGES.map((label, index) => (
               <span key={label} data-state={index < currentStep ? 'done' : index === currentStep ? 'current' : 'waiting'}>
                 <i>{index < currentStep ? '✓' : index + 1}</i>{label}
               </span>
             ))}
           </div>
 
-          <label className="command-field">
-            <span>Команда</span>
+          <label className="ultron-command-field">
+            <span>Команда Альтрону</span>
             <textarea
               value={command}
               maxLength={500}
-              disabled={stage === 'executing'}
-              onChange={(event) => {
-                setCommand(event.target.value);
-                reset();
-              }}
+              disabled={stage === 'executing' || listening}
+              onChange={(event) => { setCommand(event.target.value); clearRun(); setVoiceError(''); }}
+              placeholder="Например: покажи статус рабочего места"
             />
-            <small>{command.length}/500 · команда остаётся локальной</small>
+            <small>{command.length}/500 · текст остаётся на устройстве</small>
           </label>
-          <div className="command-meta">
+
+          <div className="ultron-command-tools">
+            <button type="button" className="voice-trigger" disabled={!localVoiceAvailable || listening || stage === 'executing'} onClick={listenOnce}>
+              {listening ? <LoaderCircle size={15} /> : <Mic size={15} />}
+              {listening ? 'Слушаю до 12 секунд…' : 'Сказать команду'}
+            </button>
             <span><TerminalSquare size={13} /> {selectedSkill.id}</span>
-            <span><LockKeyhole size={13} /> exact contract · one-shot</span>
           </div>
 
+          {voiceConfidence !== null && <p className="voice-feedback is-success" role="status">Речь распознана · уверенность {Math.round(voiceConfidence * 100)}%</p>}
+          {voiceError && <p className="voice-feedback is-error" role="alert">{voiceError}</p>}
+
+          <footer className="ultron-actions">
+            {stage === 'command' && <button type="button" className="primary-action" disabled={!command.trim() || listening} onClick={createPlan}>Собрать план и diff</button>}
+            {stage === 'plan' && <button type="button" className="primary-action" onClick={approve}>Подтвердить read-only план</button>}
+            {stage === 'approved' && <button type="button" className="primary-action" disabled={killSwitch} onClick={execute}>{killSwitch ? 'Снимите STOP для запуска' : transport === 'electron-ipc' ? 'Выполнить локально' : 'Запустить preview'}</button>}
+            {stage === 'executing' && <button type="button" className="primary-action" disabled>Выполняется…</button>}
+            {stage === 'error' && <button type="button" className="primary-action" onClick={() => setStage('plan')}>Вернуться к плану</button>}
+            {stage === 'receipt' && <button type="button" className="primary-action" onClick={clearRun}>Новая команда</button>}
+            <p>{killSwitch ? 'STOP блокирует execute.' : 'Разрешение сгорит после одного receipt.'}</p>
+          </footer>
+        </main>
+
+        <aside className="ultron-inspector" aria-label="План, изменения и результат">
+          <div className="ultron-panel-heading">
+            <div><span>Decision trace</span><h2>Контроль</h2></div>
+            <strong>{plan ? 'LIVE' : 'IDLE'}</strong>
+          </div>
+
+          {!plan && !receipt && !error && (
+            <div className="ultron-empty-state">
+              <FileDiff size={22} />
+              <strong>Diff появится до запуска</strong>
+              <span>Альтрон не выполняет скрытых действий.</span>
+            </div>
+          )}
+
           {plan && (
-            <div className="plan-diff">
+            <div className="ultron-plan">
               <section>
                 <p>План</p>
                 <ol>{plan.steps.map((step) => <li key={step}>{step}</li>)}</ol>
@@ -200,73 +281,39 @@ export function VoiceCommandRoom() {
           )}
 
           {stage === 'executing' && (
-            <section className="execution-state" role="status" aria-live="polite">
-              <LoaderCircle size={17} aria-hidden="true" />
-              <div><strong>Выполняется один handler</strong><span>STOP включится автоматически после receipt.</span></div>
+            <section className="ultron-execution" role="status" aria-live="polite">
+              <LoaderCircle size={17} />
+              <div><strong>Один handler выполняется</strong><span>STOP включится после receipt.</span></div>
             </section>
           )}
 
           {stage === 'error' && (
-            <section className="execution-state is-error" role="alert">
-              <CircleAlert size={17} aria-hidden="true" />
+            <section className="ultron-execution is-error" role="alert">
+              <CircleAlert size={17} />
               <div><strong>Выполнение заблокировано</strong><span>{error}</span></div>
             </section>
           )}
 
           {receipt && (
-            <section className="receipt" aria-live="polite">
-              <div className="receipt__heading">
+            <section className="ultron-receipt" aria-live="polite">
+              <div className="ultron-receipt__heading">
                 <div><p>Receipt · {receipt.transport}</p><strong>{receipt.summary}</strong></div>
                 <span>{receipt.receiptId.slice(0, 8)}</span>
               </div>
               <pre>{receipt.lines.join('\n')}</pre>
               <small>{receipt.boundaries.join(' · ')}</small>
-              <div className="receipt__actions">
-                <button type="button" disabled={!isTTSSupported() || speaking} onClick={speakSummary}>
-                  <Volume2 size={14} />{speaking ? 'Озвучиваю…' : 'Озвучить итог'}
-                </button>
-                <button type="button" disabled={!speaking} onClick={() => { stopSpeaking(); setSpeaking(false); }}>
-                  <Square size={12} />Стоп
-                </button>
+              <div className="ultron-receipt__actions">
+                <button type="button" disabled={!isTTSSupported() || speaking} onClick={speakSummary}><Volume2 size={14} />{speaking ? 'Озвучиваю…' : 'Озвучить итог'}</button>
+                <button type="button" disabled={!speaking} onClick={() => { stopSpeaking(); setSpeaking(false); }}><Square size={12} />Стоп</button>
               </div>
             </section>
           )}
-
-          <footer className="command-actions">
-            {stage === 'command' && (
-              <button type="button" className="primary-action" disabled={!command.trim()} onClick={createPlan}>
-                Собрать план и diff
-              </button>
-            )}
-            {stage === 'plan' && (
-              <button type="button" className="primary-action" onClick={approve}>Подтвердить read-only план</button>
-            )}
-            {stage === 'approved' && (
-              <button type="button" className="primary-action" disabled={killSwitch} onClick={execute}>
-                {killSwitch ? 'Сначала разрешите один запуск' : transport === 'electron-ipc' ? 'Выполнить локально' : 'Запустить preview'}
-              </button>
-            )}
-            {stage === 'executing' && <button type="button" className="primary-action" disabled>Выполняется…</button>}
-            {stage === 'error' && <button type="button" className="primary-action" onClick={() => setStage('plan')}>Вернуться к плану</button>}
-            {stage === 'receipt' && <button type="button" className="primary-action" onClick={reset}>Новая команда</button>}
-            <p>{killSwitch ? 'Kill switch блокирует execute.' : 'Разрешение сгорит после одного receipt.'}</p>
-          </footer>
-        </main>
+        </aside>
       </div>
     </section>
   );
 }
 
-function HudState({
-  icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  tone: 'safe' | 'warn' | 'live';
-}) {
-  return <div className="hud-state" data-tone={tone}>{icon}<span><small>{label}</small><strong>{value}</strong></span></div>;
+function HudState({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone: 'safe' | 'warn' | 'live' }) {
+  return <div className="ultron-hud-state" data-tone={tone}>{icon}<span><small>{label}</small><strong>{value}</strong></span></div>;
 }
