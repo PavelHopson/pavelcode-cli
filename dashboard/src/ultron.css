@@ -92,6 +92,165 @@ body {
 .surface-loading strong { color: var(--ultron-silver-2); font-size: 12px; }
 .surface-loading small { font-size: 9px; }
 
+.ultron-voice-shell { min-width: 0; }
+.ultron-voice-header {
+  min-height: 58px;
+  height: 58px;
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) auto minmax(190px, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--ultron-line);
+}
+.ultron-voice-header__brand { justify-self: start; }
+.ultron-voice-header__tools { justify-self: end; display: flex; align-items: center; gap: 7px; }
+.ultron-voice-header__tools > button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ultron-line);
+  border-radius: 8px;
+  background: #0a0b0e;
+  color: var(--ultron-muted);
+  cursor: pointer;
+}
+.ultron-voice-header__tools > button:hover { border-color: rgba(255, 48, 74, 0.38); color: var(--ultron-silver); }
+.ultron-header-presence {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid rgba(69, 216, 154, 0.2);
+  border-radius: 8px;
+  background: rgba(69, 216, 154, 0.04);
+  color: var(--ultron-muted);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ultron-header-presence > span { width: 6px; height: 6px; border-radius: 50%; background: var(--ultron-success); box-shadow: 0 0 10px rgba(69, 216, 154, 0.72); }
+.ultron-header-presence[data-state="listening"] > span,
+.ultron-header-presence[data-state="thinking"] > span,
+.ultron-header-presence[data-state="speaking"] > span { background: var(--ultron-signal); box-shadow: 0 0 12px rgba(255, 48, 74, 0.78); }
+
+.ultron-voice {
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(22px, 4vh, 44px) 24px 20px;
+  color: var(--ultron-silver);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(142, 16, 36, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(17, 9, 13, 0.5), transparent 38%),
+    var(--ultron-bg);
+}
+.ultron-voice__ambient {
+  position: absolute;
+  z-index: -1;
+  top: 18%;
+  left: 50%;
+  width: min(660px, 78vw);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 48, 74, 0.06);
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 46px, rgba(255, 48, 74, 0.035) 47px 48px);
+  opacity: 0.72;
+  transform: translate(-50%, -32%);
+  mask-image: radial-gradient(circle, #000 18%, transparent 72%);
+}
+.ultron-voice__header { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.ultron-voice__header p { margin: 0; color: var(--ultron-signal-soft); font: 700 9px ui-monospace, Consolas, monospace; letter-spacing: 0.18em; text-transform: uppercase; }
+.ultron-voice__header h1 { margin: 0; font-size: clamp(30px, 4vw, 48px); font-weight: 680; letter-spacing: -0.055em; }
+.ultron-voice__header > span { display: flex; align-items: center; gap: 6px; color: var(--ultron-muted); font-size: 9px; }
+
+.ultron-voice__stage { width: min(620px, 100%); display: grid; justify-items: center; gap: 12px; margin-top: clamp(20px, 4vh, 38px); }
+.ultron-avatar-presence.ultron-avatar-presence--stage { width: clamp(168px, 21vw, 232px); }
+.ultron-avatar-presence--stage .ultron-avatar-presence__halo { filter: blur(28px); opacity: 0.23; }
+.ultron-avatar-presence--stage .ultron-avatar-presence__orbit { border-width: 1px; }
+.ultron-avatar-presence--stage .ultron-avatar-presence__voice { right: 2%; bottom: 3%; height: 30px; gap: 2px; padding: 4px 6px; border-radius: 8px; }
+.ultron-avatar-presence--stage .ultron-avatar-presence__voice i { width: 2px; height: 17px; }
+.ultron-voice__presence { display: grid; justify-items: center; gap: 3px; text-align: center; }
+.ultron-voice__presence strong { color: var(--ultron-signal-soft); font: 700 10px ui-monospace, Consolas, monospace; letter-spacing: 0.16em; text-transform: uppercase; }
+.ultron-voice__presence span { color: var(--ultron-muted); font-size: 9px; }
+
+.ultron-voice__primary {
+  width: min(390px, 100%);
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 10px 15px;
+  border: 1px solid rgba(255, 48, 74, 0.42);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(142, 16, 36, 0.22), rgba(18, 10, 14, 0.88));
+  color: var(--ultron-silver);
+  box-shadow: 0 18px 48px -34px rgba(255, 48, 74, 0.72), inset 0 1px rgba(255, 255, 255, 0.025);
+  text-align: left;
+  cursor: pointer;
+}
+.ultron-voice__primary > svg { width: 42px; height: 42px; padding: 10px; border: 1px solid rgba(255, 123, 137, 0.42); border-radius: 50%; color: var(--ultron-signal-soft); }
+.ultron-voice__primary > span { display: grid; gap: 3px; }
+.ultron-voice__primary strong { font-size: 13px; }
+.ultron-voice__primary small { color: var(--ultron-muted); font-size: 9px; }
+.ultron-voice__primary:hover:not(:disabled) { border-color: rgba(255, 123, 137, 0.72); background: linear-gradient(135deg, rgba(142, 16, 36, 0.32), rgba(18, 10, 14, 0.92)); transform: translateY(-1px); }
+.ultron-voice__primary.is-active { border-color: rgba(255, 123, 137, 0.65); }
+.ultron-voice__primary:disabled { opacity: 0.78; cursor: wait; }
+
+.ultron-voice__dialog {
+  width: min(840px, 100%);
+  display: grid;
+  grid-template-columns: 0.86fr 1.14fr;
+  gap: 10px;
+  margin-top: clamp(20px, 3vh, 30px);
+}
+.ultron-voice__dialog section { min-height: 96px; padding: 14px 16px; border: 1px solid var(--ultron-line); background: rgba(10, 11, 14, 0.78); }
+.ultron-voice__dialog section[data-speaker="user"] { border-radius: 12px 4px 4px 12px; }
+.ultron-voice__dialog section[data-speaker="ultron"] { border-color: rgba(255, 48, 74, 0.24); border-radius: 4px 12px 12px 4px; }
+.ultron-voice__dialog section > span { color: var(--ultron-muted); font: 700 8px ui-monospace, Consolas, monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.ultron-voice__dialog p { margin: 8px 0 0; color: var(--ultron-silver-2); font-size: 11px; line-height: 1.55; }
+.ultron-voice__dialog section[data-speaker="ultron"] > span { color: var(--ultron-signal-soft); }
+.ultron-voice__dialog button { display: flex; align-items: center; gap: 5px; margin-top: 10px; padding: 5px 8px; border: 1px solid var(--ultron-line); border-radius: 6px; background: transparent; color: var(--ultron-muted); font-size: 8px; cursor: pointer; }
+.ultron-voice__dialog button:hover:not(:disabled) { border-color: rgba(255, 48, 74, 0.34); color: var(--ultron-signal-soft); }
+.ultron-voice__thinking { display: flex; align-items: center; gap: 4px; height: 32px; margin-top: 6px; }
+.ultron-voice__thinking i { width: 4px; height: 4px; border-radius: 50%; background: var(--ultron-signal); opacity: 0.32; }
+.ultron-voice__error { width: min(840px, 100%); margin: 10px 0 0; padding: 9px 12px; border: 1px solid rgba(255, 48, 74, 0.28); border-radius: 8px; background: rgba(142, 16, 36, 0.1); color: var(--ultron-signal-soft); font-size: 9px; text-align: center; }
+.ultron-voice__footer { width: min(840px, 100%); display: flex; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: 18px; color: var(--ultron-muted); font-size: 8px; }
+.ultron-voice__footer span { display: flex; align-items: center; gap: 5px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ultron-voice[data-motion="on"] .ultron-voice__ambient { animation: ultron-voice-ambient 18s linear infinite; }
+  .ultron-voice[data-motion="on"] .ultron-voice__primary:not(:disabled) > svg { animation: ultron-voice-cta 2.4s ease-in-out infinite; }
+  .ultron-voice[data-motion="on"] .ultron-voice__thinking i { animation: ultron-voice-thinking 900ms ease-in-out infinite alternate; }
+  .ultron-voice[data-motion="on"] .ultron-voice__thinking i:nth-child(2) { animation-delay: 150ms; }
+  .ultron-voice[data-motion="on"] .ultron-voice__thinking i:nth-child(3) { animation-delay: 300ms; }
+}
+
+@keyframes ultron-voice-ambient { to { transform: translate(-50%, -32%) rotate(360deg); } }
+@keyframes ultron-voice-cta { 50% { color: #fff; box-shadow: 0 0 22px rgba(255, 48, 74, 0.18); transform: scale(1.04); } }
+@keyframes ultron-voice-thinking { to { opacity: 1; transform: translateY(-3px); } }
+
+@media (max-width: 760px) {
+  .ultron-voice-header { grid-template-columns: 1fr auto; height: auto; min-height: 56px; padding: 8px 10px; }
+  .ultron-voice-header__brand { display: none; }
+  .ultron-voice-header .surface-switcher { justify-self: start; }
+  .ultron-header-presence { display: none; }
+  .ultron-voice { padding: 22px 14px 16px; }
+  .ultron-voice__header h1 { font-size: 32px; }
+  .ultron-voice__dialog { grid-template-columns: 1fr; }
+  .ultron-voice__dialog section[data-speaker] { min-height: 82px; border-radius: 10px; }
+  .ultron-voice__footer { align-items: flex-start; flex-direction: column; gap: 6px; }
+}
+
 .ultron-room {
   min-height: 100%;
   overflow: auto;
@@ -315,8 +474,12 @@ body {
 .ultron-command-field textarea:disabled { opacity: 0.56; cursor: wait; }
 .ultron-command-field small { color: var(--ultron-muted); font-size: 8px; text-align: right; }
 .ultron-command-tools { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.ultron-command-tools__voice-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .ultron-command-tools > span { display: flex; align-items: center; gap: 5px; color: var(--ultron-muted); font: 8px ui-monospace, Consolas, monospace; }
 .voice-trigger { min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; border: 1px solid rgba(255, 48, 74, 0.3); border-radius: 7px; background: rgba(142, 16, 36, 0.1); color: var(--ultron-signal-soft); font-size: 9px; cursor: pointer; }
+.voice-trigger--conversation { border-color: rgba(255, 89, 108, 0.56); background: linear-gradient(180deg, rgba(255, 48, 74, 0.2), rgba(142, 16, 36, 0.14)); color: var(--ultron-silver); font-weight: 650; }
+.voice-trigger--operator { border-color: var(--ultron-line); background: transparent; color: var(--ultron-muted); }
+.voice-trigger:hover:not(:disabled) { border-color: rgba(255, 107, 125, 0.72); color: var(--ultron-silver); }
 .voice-trigger:disabled { border-color: var(--ultron-line); color: var(--ultron-muted); background: transparent; cursor: not-allowed; opacity: 0.62; }
 .voice-feedback { position: relative; z-index: 1; margin: 7px 0 0; padding: 7px 9px; border-radius: 6px; font-size: 9px; }
 .voice-feedback.is-success { color: var(--ultron-success); background: rgba(69, 216, 154, 0.06); }
@@ -431,6 +594,7 @@ body {
   .ultron-actions { align-items: stretch; flex-direction: column; }
   .voice-trigger,
   .ultron-room .primary-action { width: 100%; justify-content: center; }
+  .ultron-command-tools__voice-actions { width: 100%; }
   .ultron-command-tools > span { justify-content: center; }
 }
 

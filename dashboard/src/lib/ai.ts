@@ -23,9 +23,17 @@ export const MODELS = [
     endpoint: 'lab',
     risk: 'experimental',
   },
+  {
+    id: 'hf.co/chimingw/Qwen3.8-27B-Uncensored-OrcaRouter-GGUF:Q4_K_M',
+    name: 'OrcaRouter Qwen3.8 27B Q4 · Lab',
+    desc: 'Research-кандидат · медленный на RTX 4060 Ti',
+    endpoint: 'lab',
+    risk: 'experimental',
+  },
 ] as const;
 
 export type ModelDefinition = (typeof MODELS)[number];
+export const VOICE_MODEL_ID = 'qwen3:8b';
 
 const OLLAMA_ENDPOINTS = {
   primary: 'http://127.0.0.1:11434',
@@ -92,10 +100,12 @@ export async function sendMessage(
   onChunk: (text: string) => void,
   signal?: AbortSignal,
   model?: string,
+  systemPrompt?: string,
+  options?: { maxTokens?: number; reasoningEffort?: 'none' | 'low' | 'medium' | 'high' },
 ): Promise<void> {
   const selected = getModelDefinition(model);
   const providerUrl = OLLAMA_ENDPOINTS[selected.endpoint];
-  const systemPrompt = selected.risk === 'experimental'
+  const defaultSystemPrompt = selected.risk === 'experimental'
     ? 'Ты — Eclipse Ultron Lab, изолированный локальный исследовательский чат. У тебя нет инструментов, shell, доступа к файлам, сети, секретам, установке или deployment. Не заявляй о выполненных действиях. Отделяй факты от предположений и предупреждай о непроверяемых или опасных утверждениях. Поддерживаешь русский и английский.'
     : 'Ты — Eclipse Ultron, локальный AI-оператор Eclipse Forge для разработки, автоматизации и кодинга. Отвечай чётко, по делу, отделяй факты от предположений и не заявляй о действиях без receipt. Поддерживаешь русский и английский. Используй markdown для форматирования кода.';
 
@@ -108,11 +118,12 @@ export async function sendMessage(
     body: JSON.stringify({
       model: selected.id,
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: systemPrompt || defaultSystemPrompt },
         ...messages,
       ],
       stream: true,
-      max_tokens: 4096,
+      max_tokens: options?.maxTokens ?? 4096,
+      reasoning_effort: options?.reasoningEffort,
     }),
     signal,
   });

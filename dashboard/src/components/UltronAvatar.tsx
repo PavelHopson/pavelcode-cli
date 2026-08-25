@@ -6,7 +6,7 @@ const VOICE_BARS = [0, 1, 2, 3, 4, 5, 6];
 
 interface UltronAvatarProps {
   presence: UltronPresenceState;
-  size?: 'launcher' | 'panel' | 'chat';
+  size?: 'launcher' | 'panel' | 'chat' | 'stage';
   announce?: boolean;
   motionEnabled?: boolean;
 }

@@ -6,6 +6,7 @@ import {
   FileDiff,
   LoaderCircle,
   LockKeyhole,
+  MessageSquareText,
   Mic,
   MicOff,
   Radio,
@@ -31,9 +32,12 @@ interface VoiceCommandRoomProps {
   motionLocked: boolean;
   onMotionChange: () => void;
   onPresenceChange: (state: UltronPresenceState) => void;
+  onVoiceQuestion: (text: string) => void;
 }
 
-export function VoiceCommandRoom({ motionEnabled, motionLocked, onMotionChange, onPresenceChange }: VoiceCommandRoomProps) {
+type ListeningMode = 'question' | 'command';
+
+export function VoiceCommandRoom({ motionEnabled, motionLocked, onMotionChange, onPresenceChange, onVoiceQuestion }: VoiceCommandRoomProps) {
   const [skillId, setSkillId] = useState<VoiceSkillId>('workspace.status');
   const [command, setCommand] = useState('Покажи безопасный статус рабочего места');
   const [plan, setPlan] = useState<VoicePlan | null>(null);
@@ -44,11 +48,12 @@ export function VoiceCommandRoom({ motionEnabled, motionLocked, onMotionChange, 
   const [error, setError] = useState('');
   const [voiceError, setVoiceError] = useState('');
   const [voiceConfidence, setVoiceConfidence] = useState<number | null>(null);
-  const [listening, setListening] = useState(false);
+  const [listeningMode, setListeningMode] = useState<ListeningMode | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const transport = getOperatorTransport();
   const localVoiceAvailable = isLocalSTTSupported();
   const selectedSkill = useMemo(() => VOICE_SKILL_ALLOWLIST.find((skill) => skill.id === skillId)!, [skillId]);
+  const listening = listeningMode !== null;
 
   useEffect(() => () => {
     stopSpeaking();
@@ -100,19 +105,26 @@ export function VoiceCommandRoom({ motionEnabled, motionLocked, onMotionChange, 
     }
   };
 
-  const listenOnce = async () => {
+  const listenOnce = async (mode: ListeningMode) => {
     if (!localVoiceAvailable || listening || stage === 'executing') return;
     stopSpeaking();
     setSpeaking(false);
     setVoiceError('');
     setVoiceConfidence(null);
-    setListening(true);
+    setListeningMode(mode);
     const result = await listenOnceLocal();
-    setListening(false);
+    setListeningMode(null);
     if (!result.ok) {
       setVoiceError(result.error.message);
       return;
     }
+
+    if (mode === 'question') {
+      onPresenceChange('thinking');
+      onVoiceQuestion(result.text);
+      return;
+    }
+
     clearRun();
     setCommand(result.text);
     setVoiceConfidence(result.confidence);
@@ -238,7 +250,7 @@ export function VoiceCommandRoom({ motionEnabled, motionLocked, onMotionChange, 
           </div>
 
           <label className="ultron-command-field">
-            <span>Команда Альтрону</span>
+            <span>Операторская команда</span>
             <textarea
               value={command}
               maxLength={500}
@@ -250,10 +262,16 @@ export function VoiceCommandRoom({ motionEnabled, motionLocked, onMotionChange, 
           </label>
 
           <div className="ultron-command-tools">
-            <button type="button" className="voice-trigger" disabled={!localVoiceAvailable || listening || stage === 'executing'} onClick={listenOnce}>
-              {listening ? <LoaderCircle size={15} /> : <Mic size={15} />}
-              {listening ? 'Слушаю до 12 секунд…' : 'Сказать команду'}
-            </button>
+            <div className="ultron-command-tools__voice-actions">
+              <button type="button" className="voice-trigger voice-trigger--conversation" disabled={!localVoiceAvailable || listening || stage === 'executing'} onClick={() => listenOnce('question')}>
+                {listeningMode === 'question' ? <LoaderCircle size={15} /> : <MessageSquareText size={15} />}
+                {listeningMode === 'question' ? 'Слушаю вопрос…' : 'Спросить Альтрона'}
+              </button>
+              <button type="button" className="voice-trigger voice-trigger--operator" disabled={!localVoiceAvailable || listening || stage === 'executing'} onClick={() => listenOnce('command')}>
+                {listeningMode === 'command' ? <LoaderCircle size={15} /> : <Mic size={15} />}
+                {listeningMode === 'command' ? 'Слушаю команду…' : 'Продиктовать команду'}
+              </button>
+            </div>
             <span><TerminalSquare size={13} /> {selectedSkill.id}</span>
           </div>
 

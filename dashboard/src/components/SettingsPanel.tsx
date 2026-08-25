@@ -1,17 +1,12 @@
-import { useEffect, useState } from 'react';
-import { X, Cpu, Server, TriangleAlert } from 'lucide-react';
-import { MODELS, getModelDefinition, getSelectedModel, setSelectedModel } from '../lib/ai';
+import { useEffect } from 'react';
+import { Cpu, Mic, Server, ShieldCheck, Volume2, X } from 'lucide-react';
 
 interface SettingsPanelProps {
   open: boolean;
   onClose: () => void;
-  onModelChange: (model: string) => void;
 }
 
-export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelProps) {
-  const [model, setModel] = useState(getSelectedModel());
-  const [saved, setSaved] = useState(false);
-
+export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -22,16 +17,6 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
   }, [open, onClose]);
 
   if (!open) return null;
-
-  const selectedDefinition = getModelDefinition(model);
-  const labSelected = selectedDefinition.risk === 'experimental';
-
-  const handleSave = () => {
-    setSelectedModel(model);
-    onModelChange(model);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
 
   return (
     <div className="settings-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
@@ -45,62 +30,46 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="settings-title">
             <h2 id="settings-title" className="text-sm font-medium text-text-1">Настройки Eclipse Ultron</h2>
-            <p>Локальный провайдер и модель по умолчанию</p>
+            <p>Локальный голосовой контур</p>
           </div>
           <button type="button" aria-label="Закрыть настройки" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-text-3 hover:bg-card hover:text-text-1 transition-colors">
             <X size={16} />
           </button>
         </div>
 
-        <div className="p-5 space-y-6">
-          {/* Provider info */}
+        <div className="p-5 space-y-3">
           <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
-            <Server size={16} className={labSelected ? 'text-accent' : 'text-live'} />
+            <Server size={16} className="text-live" />
             <div>
-              <p className="text-xs font-medium text-text-1">{labSelected ? 'Ollama Lab · изолированный' : 'Ollama · основной'}</p>
-              <p className="text-[10px] text-text-3">127.0.0.1:{labSelected ? '11435' : '11434'} · Только это устройство</p>
+              <p className="text-xs font-medium text-text-1">Ollama · основной локальный контур</p>
+              <p className="text-[10px] text-text-3">127.0.0.1:11434 · данные не покидают устройство</p>
             </div>
           </div>
-
-          {/* Model */}
-          <div>
-            <label className="flex items-center gap-2 text-xs text-text-3 mb-3">
-              <Cpu size={12} /> Модель
-            </label>
-            <div className="space-y-1.5">
-              {MODELS.map((m) => (
-                <label key={m.id}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl border cursor-pointer transition-all ${
-                    model === m.id
-                      ? 'border-accent/25 bg-accent/5 text-text-1'
-                      : 'border-border text-text-3 hover:bg-card hover:text-text-2'
-                  }`}>
-                  <input type="radio" name="model" value={m.id} checked={model === m.id} onChange={() => setModel(m.id)} className="sr-only" />
-                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${model === m.id ? 'border-accent' : 'border-text-3'}`}>
-                    {model === m.id && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{m.name}</p>
-                    <p className="text-[11px] text-text-3">{m.desc}</p>
-                  </div>
-                </label>
-              ))}
+          <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl">
+            <Cpu size={16} className="text-accent" />
+            <div>
+              <p className="text-xs font-medium text-text-1">Qwen 3 8B · голосовой профиль</p>
+              <p className="text-[10px] text-text-3">Закреплён для быстрой живой беседы без долгого старта 27B</p>
             </div>
           </div>
-
-          {labSelected && (
-            <div className="px-4 py-3 bg-accent/5 border border-accent/20 rounded-xl" role="status">
-              <p className="flex items-center gap-2 text-xs font-medium text-accent">
-                <TriangleAlert size={14} /> Экспериментальный Lab-профиль
-              </p>
-              <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
-                Модель работает только в чате. Shell, файлы, сеть, секреты и operator execute ей недоступны.
-                Ответы требуют ручной проверки.
-              </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="px-4 py-3 bg-card border border-border rounded-xl">
+              <p className="flex items-center gap-2 text-xs font-medium text-text-1"><Mic size={14} /> Whisper offline</p>
+              <p className="mt-1 text-[10px] text-text-3">Распознавание после клика</p>
             </div>
-          )}
-
-          {/* Install hint */}
+            <div className="px-4 py-3 bg-card border border-border rounded-xl">
+              <p className="flex items-center gap-2 text-xs font-medium text-text-1"><Volume2 size={14} /> Windows TTS</p>
+              <p className="mt-1 text-[10px] text-text-3">Ответ Альтрона вслух</p>
+            </div>
+          </div>
+          <div className="px-4 py-3 bg-accent/5 border border-accent/20 rounded-xl" role="status">
+            <p className="flex items-center gap-2 text-xs font-medium text-accent">
+              <ShieldCheck size={14} /> Приватность по умолчанию
+            </p>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
+              Нет фоновой записи и wake word. Каждая реплика начинается отдельным нажатием.
+            </p>
+          </div>
           <div className="px-4 py-3 bg-card border border-border rounded-xl">
             <p className="text-[11px] text-text-3 leading-relaxed">
               Локальный runtime и модели:<br/>
@@ -109,11 +78,10 @@ export function SettingsPanel({ open, onClose, onModelChange }: SettingsPanelPro
           </div>
         </div>
 
-        <div className="px-5 py-4 border-t border-border flex items-center justify-between">
-          <p className={`text-xs transition-opacity ${saved ? 'text-live opacity-100' : 'opacity-0'}`}>✓ Сохранено</p>
-          <button type="button" onClick={handleSave}
+        <div className="px-5 py-4 border-t border-border flex items-center justify-end">
+          <button type="button" onClick={onClose}
             className="px-5 py-2 rounded-lg bg-accent/10 border border-accent/20 text-accent text-xs font-medium hover:bg-accent/15 transition-colors">
-            Сохранить
+            Готово
           </button>
         </div>
       </div>

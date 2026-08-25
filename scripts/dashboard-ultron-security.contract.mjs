@@ -22,6 +22,12 @@ test('Ultron one-shot STT uses a fixed, bounded and trusted Electron IPC contrac
   assert.match(main, /VOICE_OUTPUT_LIMIT_BYTES = 8 \* 1024/)
   assert.match(main, /VOICE_PROCESS_TIMEOUT_MS = 25_000/)
   assert.match(main, /VOICE_RATE_LIMIT_MS = 1_500/)
+  assert.match(main, /VOICE_MODEL_WARMUP_URL = 'http:\/\/127\.0\.0\.1:11434\/api\/generate'/)
+  assert.match(main, /VOICE_MODEL_WARMUP_TIMEOUT_MS = 120_000/)
+  assert.match(main, /model: 'qwen3:8b'/)
+  assert.match(main, /keep_alive: '30m'/)
+  assert.match(main, /void warmPrimaryVoiceModel\(\)/)
+  assert.doesNotMatch(main, /warmPrimaryVoiceModel[\s\S]*console\./)
   assert.match(main, /voiceListenInFlight/)
   assert.match(main, /ipcMain\.handle\(VOICE_LISTEN_CHANNEL, async \(event, \.\.\.args\)/)
   assert.match(main, /args\.length !== 0/)
@@ -62,11 +68,13 @@ test('Ultron Lab routes the abliterated model to a separate local endpoint witho
   ])
 
   assert.match(ai, /huihui_ai\/qwen3\.8-abliterated:27b/)
+  assert.match(ai, /hf\.co\/chimingw\/Qwen3\.8-27B-Uncensored-OrcaRouter-GGUF:Q4_K_M/)
   assert.match(ai, /lab: 'http:\/\/127\.0\.0\.1:11435'/)
   assert.match(ai, /У тебя нет инструментов, shell, доступа к файлам, сети, секретам, установке или deployment/)
   assert.doesNotMatch(ai, /tools\s*:/)
-  assert.match(settings, /Экспериментальный Lab-профиль/)
-  assert.match(settings, /Shell, файлы, сеть, секреты и operator execute ей недоступны/)
+  assert.match(settings, /Qwen 3 8B · голосовой профиль/)
+  assert.match(settings, /Нет фоновой записи и wake word/)
+  assert.doesNotMatch(settings, /HuiHui|Lab-профиль/)
   assert.match(main, /OLLAMA_HOST: '127\.0\.0\.1:11435'/)
   assert.match(main, /OLLAMA_MODELS: labOllamaModels/)
   assert.match(main, /OLLAMA_LOAD_TIMEOUT: '15m'/)
@@ -76,25 +84,31 @@ test('Ultron Lab routes the abliterated model to a separate local endpoint witho
 })
 
 test('Ultron command center exposes explicit safety, voice and accessible motion controls', async () => {
-  const [app, room, chat, core, avatar, contact, voice, css] = await Promise.all([
+  const [app, room, conversation, core, avatar, voice, css] = await Promise.all([
     readText('dashboard/src/App.tsx'),
     readText('dashboard/src/components/VoiceCommandRoomV2.tsx'),
-    readText('dashboard/src/components/Chat.tsx'),
+    readText('dashboard/src/components/UltronVoiceConversation.tsx'),
     readText('dashboard/src/components/UltronCore.tsx'),
     readText('dashboard/src/components/UltronAvatar.tsx'),
-    readText('dashboard/src/components/UltronContactDock.tsx'),
     readText('dashboard/src/lib/voice.ts'),
     readText('dashboard/src/ultron.css'),
   ])
 
   assert.match(room, /isLocalSTTSupported/)
   assert.match(room, /listenOnceLocal/)
-  assert.match(chat, /listenOnceLocal/)
-  assert.match(chat, /Голос заполнит поле — проверьте текст перед отправкой/)
-  assert.match(chat, /externalTurn\.mode === 'voice'/)
-  assert.match(chat, /forceSpeak: true/)
-  assert.match(chat, /speak\(assistantMsg\.content\)/)
-  assert.doesNotMatch(chat, /createRecognition|webkitSpeechRecognition/)
+  assert.match(room, /Спросить Альтрона/)
+  assert.match(room, /Продиктовать команду/)
+  assert.match(room, /onVoiceQuestion\(result\.text\)/)
+  assert.match(app, /onVoiceQuestion=\{queueConversationTurn\}/)
+  assert.match(app, /VOICE_MODEL_ID/)
+  assert.doesNotMatch(app, /components\/Chat|components\/Sidebar|UltronContactDock/)
+  assert.match(conversation, /listenOnceLocal/)
+  assert.match(conversation, /sendMessage/)
+  assert.match(conversation, /VOICE_MODEL_ID/)
+  assert.match(conversation, /maxTokens: 320, reasoningEffort: 'none'/)
+  assert.match(conversation, /speak\(assistantMessage\.content\)/)
+  assert.match(conversation, /Говорить с Альтроном/)
+  assert.doesNotMatch(conversation, /<input|<textarea|createRecognition|webkitSpeechRecognition/)
   assert.match(room, /STOP активен/)
   assert.match(room, /aria-pressed=\{motionEnabled\}/)
   assert.match(app, /ultron-motion-enabled-v1/)
@@ -105,24 +119,15 @@ test('Ultron command center exposes explicit safety, voice and accessible motion
   assert.match(core, /ultron-core__voice/)
   assert.match(avatar, /data-presence=\{presence\}/)
   assert.match(avatar, /ultron-avatar-presence__voice/)
-  assert.match(contact, /listenOnceLocal/)
-  assert.match(contact, /Спросить голосом/)
-  assert.match(contact, /Только продиктовать/)
-  assert.match(contact, /Каждая новая реплика требует отдельного нажатия/)
-  assert.match(contact, /onVoiceTurn\(result\.text\)/)
-  assert.match(contact, /onDraft\(result\.text\)/)
-  assert.doesNotMatch(contact, /sendMessage|handleSend|createRecognition|webkitSpeechRecognition/)
-  assert.doesNotMatch(contact, /setInterval|wake.?word|background.?listen/i)
-  assert.match(contact, /role="dialog"/)
-  assert.match(contact, /aria-expanded=\{open\}/)
-  assert.match(contact, /event\.key !== 'Escape'/)
+  assert.doesNotMatch(conversation, /setInterval|wake.?word|background.?listen/i)
   assert.match(voice, /45_000/)
   assert.match(voice, /speechSynthesis\.cancel\(\)/)
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/)
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/)
-  assert.match(css, /\.ultron-contact__launcher/)
+  assert.match(css, /\.ultron-voice__primary/)
+  assert.match(css, /\.ultron-avatar-presence--stage/)
   assert.match(css, /@keyframes ultron-avatar-voice/)
   assert.match(css, /@keyframes ultron-core-voice/)
   assert.match(css, /\.ultron-avatar-presence\[data-motion="on"\]/)
-  assert.doesNotMatch(`${app}\n${room}\n${chat}\n${core}\n${avatar}\n${contact}\n${css}`, /Marvel|Avengers|Iron Man|Tony Stark/i)
+  assert.doesNotMatch(`${app}\n${room}\n${conversation}\n${core}\n${avatar}\n${css}`, /Marvel|Avengers|Iron Man|Tony Stark/i)
 })

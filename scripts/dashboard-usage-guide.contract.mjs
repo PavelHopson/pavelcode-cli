@@ -8,23 +8,21 @@ const repoRoot = fileURLToPath(new URL('../', import.meta.url))
 const readText = (relativePath) => readFile(path.join(repoRoot, relativePath), 'utf8')
 
 test('desktop usage guide is discoverable on first run and remains reopenable', async () => {
-  const [app, sidebar] = await Promise.all([
-    readText('dashboard/src/App.tsx'),
-    readText('dashboard/src/components/Sidebar.tsx'),
-  ])
+  const app = await readText('dashboard/src/App.tsx')
 
   assert.match(app, /ultron-usage-guide-seen-v1/)
   assert.match(app, /localStorage\.getItem\(USAGE_GUIDE_STORAGE_KEY\) !== '1'/)
   assert.match(app, /aria-label="Открыть руководство"/)
-  assert.match(sidebar, /Как пользоваться/)
-  assert.match(sidebar, /onOpenUsageGuide/)
+  assert.doesNotMatch(app, /components\/Sidebar/)
 })
 
-test('guide describes only the current local chat and read-only operator paths', async () => {
+test('guide describes only the current local voice and read-only operator paths', async () => {
   const guide = await readText('dashboard/src/components/UsageGuide.tsx')
 
   assert.match(guide, /Как пользоваться Eclipse Ultron/)
   assert.match(guide, /Qwen 3 8B/)
+  assert.match(guide, /Говорить с Альтроном/)
+  assert.match(guide, /новое нажатие/i)
   assert.match(guide, /проверьте план и diff/i)
   assert.match(guide, /Operator не пишет файлы, не запускает shell и не использует сеть/)
   assert.doesNotMatch(guide, /автономн|полный доступ|управляет компьютером/i)

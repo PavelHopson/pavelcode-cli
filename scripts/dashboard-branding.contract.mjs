@@ -60,10 +60,9 @@ test('brand asset generation is local, deterministic and free of remote artwork'
 })
 
 test('Ultron shell exposes branded, accessible and responsive primary paths', async () => {
-  const [app, sidebar, chat, settings, baseCss, brandCss, ultronCss] = await Promise.all([
+  const [app, conversation, settings, baseCss, brandCss, ultronCss] = await Promise.all([
     readText('dashboard/src/App.tsx'),
-    readText('dashboard/src/components/Sidebar.tsx'),
-    readText('dashboard/src/components/Chat.tsx'),
+    readText('dashboard/src/components/UltronVoiceConversation.tsx'),
     readText('dashboard/src/components/SettingsPanel.tsx'),
     readText('dashboard/src/index.css'),
     readText('dashboard/src/eclipse-forge.css'),
@@ -72,18 +71,20 @@ test('Ultron shell exposes branded, accessible and responsive primary paths', as
   const css = `${baseCss}\n${brandCss}\n${ultronCss}`
 
   assert.match(app, /BrandLockup/)
-  assert.match(app, /hidden 2xl:block/)
-  assert.match(sidebar, /aria-current=/)
-  assert.match(sidebar, /Local-first/)
-  assert.match(chat, /QUICK_PROMPTS/)
-  assert.match(chat, /aria-label="Сообщение для Альтрона"/)
+  assert.match(app, /type Surface = 'conversation' \| 'operator'/)
+  assert.match(app, />Альтрон<\/button>/)
+  assert.match(app, />Оператор<\/button>/)
+  assert.doesNotMatch(app, /components\/Chat|components\/Sidebar|UltronContactDock/)
+  assert.match(conversation, /Говорить с Альтроном/)
+  assert.match(conversation, /Последний голосовой обмен/)
+  assert.doesNotMatch(conversation, /<input|<textarea/)
   assert.match(settings, /aria-modal="true"/)
   assert.match(settings, /event\.key === 'Escape'/)
   assert.match(css, /:focus-visible/)
   assert.match(css, /prefers-reduced-motion: reduce/)
   assert.match(css, /@media \(max-width: 480px\)/)
   assert.match(css, /--ultron-signal: #ff304a/i)
-  assert.match(css, /\.ultron-core/)
+  assert.match(css, /\.ultron-voice/)
 })
 
 test('personal Windows installer prefers the approved E drive program root with a safe fallback', async () => {

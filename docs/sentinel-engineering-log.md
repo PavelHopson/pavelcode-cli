@@ -296,3 +296,32 @@ This document records blocked checks, failed attempts, and known limitations dur
   speech while staying above the `0.35` level that produced a noise false positive.
 - Pinned `directsound` only inside the trusted one-shot Whisper child process. No renderer input,
   background capture, audio persistence or additional microphone authority was introduced.
+
+# 2026-08-25 — conversational voice path inside Ultron Core
+
+- Reproduced the UX mismatch after STT recovery: `Сказать команду` only populated the operator
+  textarea, so a conversational question looked unanswered even though recognition succeeded.
+- Made `Спросить Альтрона` the primary Core voice action. Its one-shot transcript routes through
+  the existing Chat turn and bounded TTS path, so the answer is both visible and spoken.
+- Kept `Продиктовать команду` as a separate secondary action. It only fills the read-only operator
+  form; plan, approval, STOP release and execution remain separate human-controlled stages.
+
+# 2026-08-25 — voice-first Ultron surface
+
+- Removed the visible Chat, session sidebar, status rail and floating contact dock from the current
+  product shell. The primary surface is now a central living avatar with one explicit voice action.
+- Fixed a state race where a successful STT result could be discarded while React still considered
+  capture active. The transcript now proceeds directly to the local model and bounded TTS.
+- Pinned live voice to `qwen3:8b` on `127.0.0.1:11434`. Experimental 27B selections stored by older
+  builds cannot replace or delay the live assistant.
+- Kept the last transcript and answer visible for recovery while removing every text input from the
+  conversation surface. Safe Operator remains a separate mode for reviewable actions.
+- Added responsive stage, listening/thinking/speaking animation, disabled/error states and an explicit
+  reduced-motion path. Playwright passed at 1440x960 and 390x844 with zero overflow or browser errors;
+  the reduced-motion run exposed zero continuous animations.
+- Reviewed OrcaRouter FP8/GGUF and AEON BF16 Qwen3.8 27B releases. Native FP8/BF16 are incompatible
+  with the 16 GiB VRAM target; only the pinned OrcaRouter Q4 GGUF is approved as an isolated Lab
+  research candidate. No abliterated model receives tools or Operator authority.
+- Installed the pinned OrcaRouter Q4_K_M build in the E-drive Ollama Lab runtime. Ollama completed
+  SHA-256 verification and registered digest `6e33a17b4eac0310b9bef6f005815e68d41b72f4ddaaa7c04fdca80245239b7b`
+  (17,741,872,653 bytes). Promotion remains blocked on a recorded comparison benchmark.

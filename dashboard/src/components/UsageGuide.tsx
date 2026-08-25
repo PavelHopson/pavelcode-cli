@@ -3,7 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   CircleCheck,
-  MessageSquare,
+  Mic,
   Settings2,
   ShieldCheck,
   X,
@@ -14,7 +14,7 @@ interface UsageGuideProps {
   open: boolean;
   onClose: () => void;
   onOpenSettings: () => void;
-  onOpenChat: () => void;
+  onOpenVoice: () => void;
   onOpenOperator: () => void;
 }
 
@@ -31,7 +31,7 @@ export function UsageGuide({
   open,
   onClose,
   onOpenSettings,
-  onOpenChat,
+  onOpenVoice,
   onOpenOperator,
 }: UsageGuideProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -95,7 +95,7 @@ export function UsageGuide({
             <p className="usage-guide-eyebrow"><BookOpen size={13} /> Eclipse Forge · быстрый старт</p>
             <h2 id="usage-guide-title">Как пользоваться Eclipse Ultron</h2>
             <p id="usage-guide-description">
-              Два понятных режима: локальный AI-чат и Ultron Core для проверяемых read-only действий.
+              Живой локальный голосовой ассистент и отдельный Operator для проверяемых read-only действий.
             </p>
           </div>
           <button
@@ -115,8 +115,8 @@ export function UsageGuide({
             <p className="usage-guide-summary__label">Готово к работе</p>
             <h3>Первый результат — за три шага</h3>
             <ul>
-              <li><CircleCheck size={14} /> Локальная модель через Ollama</li>
-              <li><CircleCheck size={14} /> История диалогов на устройстве</li>
+              <li><CircleCheck size={14} /> Qwen 3 8B для быстрого голосового ответа</li>
+              <li><CircleCheck size={14} /> Whisper и история разговоров на устройстве</li>
               <li><CircleCheck size={14} /> Ручное подтверждение действий</li>
             </ul>
             <div className="usage-guide-boundary">
@@ -129,8 +129,8 @@ export function UsageGuide({
             <li>
               <span className="usage-guide-step-number">01</span>
               <div>
-                <p className="usage-guide-step-title"><Settings2 size={15} /> Выберите локальную модель</p>
-                <p>Откройте настройки и выберите модель, установленную в Ollama. Для быстрого старта подходит Qwen 3 8B.</p>
+                <p className="usage-guide-step-title"><Settings2 size={15} /> Проверьте локальный контур</p>
+                <p>В настройках показаны Ollama, Qwen 3 8B, Whisper offline и Windows TTS. Голосовой профиль уже выбран.</p>
                 <button type="button" className="usage-guide-action" onClick={onOpenSettings}>
                   Открыть настройки <ArrowRight size={13} />
                 </button>
@@ -139,20 +139,20 @@ export function UsageGuide({
             <li>
               <span className="usage-guide-step-number">02</span>
               <div>
-                <p className="usage-guide-step-title"><MessageSquare size={15} /> Начните диалог</p>
-                <p>Перейдите в «Чат», вставьте задачу, код или текст ошибки и нажмите Enter.</p>
-                <button type="button" className="usage-guide-action" onClick={onOpenChat}>
-                  Перейти в чат <ArrowRight size={13} />
+                <p className="usage-guide-step-title"><Mic size={15} /> Поговорите с Альтроном</p>
+                <p>Нажмите «Говорить с Альтроном», произнесите одну фразу и дождитесь голосового ответа. Новая реплика — новое нажатие.</p>
+                <button type="button" className="usage-guide-action" onClick={onOpenVoice}>
+                  Открыть голос Альтрона <ArrowRight size={13} />
                 </button>
               </div>
             </li>
             <li>
               <span className="usage-guide-step-number">03</span>
               <div>
-                <p className="usage-guide-step-title"><ShieldCheck size={15} /> Дайте команду Ultron Core</p>
-                <p>Введите команду или нажмите «Сказать команду». Затем проверьте план и diff, подтвердите их, снимите STOP для одного запуска и изучите receipt.</p>
+                <p className="usage-guide-step-title"><ShieldCheck size={15} /> Используйте Operator для действий</p>
+                <p>Продиктуйте операторскую команду. Затем проверьте план и diff, подтвердите их, снимите STOP для одного запуска и изучите receipt.</p>
                 <button type="button" className="usage-guide-action" onClick={onOpenOperator}>
-                  Открыть Ultron Core <ArrowRight size={13} />
+                  Открыть Operator <ArrowRight size={13} />
                 </button>
               </div>
             </li>
@@ -160,7 +160,7 @@ export function UsageGuide({
         </div>
 
         <footer className="usage-guide-footer">
-          <p>Руководство всегда доступно через «Как пользоваться» в боковом меню.</p>
+          <p>Руководство всегда доступно по кнопке с книгой в верхней панели.</p>
           <button type="button" className="usage-guide-primary" onClick={onClose}>Понятно, начать работу</button>
         </footer>
       </div>

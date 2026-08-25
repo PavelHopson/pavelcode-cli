@@ -21,6 +21,8 @@ const VOICE_LISTEN_CHANNEL = 'sentinel:voice:listen-once';
 const VOICE_OUTPUT_LIMIT_BYTES = 8 * 1024;
 const VOICE_PROCESS_TIMEOUT_MS = 25_000;
 const VOICE_RATE_LIMIT_MS = 1_500;
+const VOICE_MODEL_WARMUP_URL = 'http://127.0.0.1:11434/api/generate';
+const VOICE_MODEL_WARMUP_TIMEOUT_MS = 120_000;
 let voiceListenInFlight = false;
 let voiceLastStartedAt = 0;
 const operatorModuleUrl = pathToFileURL(
@@ -87,6 +89,33 @@ async function ensureLabOllamaServer() {
   child.once('exit', () => {
     if (labOllamaProcess === child) labOllamaProcess = null;
   });
+}
+
+async function warmPrimaryVoiceModel() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), VOICE_MODEL_WARMUP_TIMEOUT_MS);
+  try {
+    const response = await fetch(VOICE_MODEL_WARMUP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'qwen3:8b',
+        prompt: '',
+        stream: false,
+        keep_alive: '30m',
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      return;
+    }
+    await response.arrayBuffer();
+  } catch {
+    // Voice UI remains usable and reports provider failures explicitly.
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 
@@ -344,6 +373,7 @@ function createTray() {
 app.whenReady().then(() => {
   createWindow();
   createTray();
+  void warmPrimaryVoiceModel();
   void ensureLabOllamaServer();
 
   // Global hotkey: Ctrl+Shift+S to toggle window

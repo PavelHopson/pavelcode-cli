@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/PavelHopson/eclipse-hopson-sentinel/actions/workflows/ci.yml)
 ![Desktop](https://img.shields.io/badge/Desktop-Windows-111318?style=flat-square&logo=windows11&logoColor=F3F5F7)
-![Release](https://img.shields.io/badge/Ultron-1.2.2-8E1024?style=flat-square)
+![Release](https://img.shields.io/badge/Ultron-1.2.3-8E1024?style=flat-square)
 ![Runtime](https://img.shields.io/badge/Sentinel-0.1.7-15181D?style=flat-square)
 ![Local first](https://img.shields.io/badge/data-local--first-45D89A?style=flat-square)
 ![Policy](https://img.shields.io/badge/execution-human%20approved-F2C94C?style=flat-square)
@@ -41,17 +41,15 @@
 
 | Поверхность | Что даёт | Текущая граница |
 | --- | --- | --- |
-| **Ultron Core** | command room с plan, diff, approval и receipt | три фиксированных read-only handler |
-| **Постоянная связь** | живой avatar-dock на любом экране | микрофон запускается только по нажатию |
-| **Голосовой диалог** | one-shot STT, ответ модели и TTS | одна реплика на один явный клик |
-| **AI Chat** | локальные и OpenAI-compatible модели | голос можно отправить явно или оставить черновиком |
-| **Ultron Lab** | изолированный 27B experimental chat | без tools, shell, filesystem, network и execute |
+| **Альтрон** | центральный живой voice-first диалог: one-shot STT, быстрый локальный ответ и TTS | без текстового composer; одна реплика на один явный клик |
+| **Operator** | command room с plan, diff, approval и receipt | execute требует отдельного approval и снятия STOP |
+| **Ultron Lab** | изолированный инвентарь 27B research-моделей | не участвует в живом голосе; без tools, shell, filesystem, network и execute |
 | **Sentinel CLI** | coding-agent, provider routing, bridge и MCP contracts | расширенные права зависят от явной конфигурации |
 | **Office bridge** | подписанные локальные события для Eclipse Chat | opt-in, bounded payloads, replay protection |
 | **Windows Doctor** | read-only security posture audit | диагностика без автоматического remediation |
 
 <p align="center">
-  <img src="docs/assets/ultron-command-center.png" alt="Eclipse Ultron command center с постоянной голосовой связью" width="100%" />
+  <img src="docs/assets/ultron-command-center.png" alt="Eclipse Ultron Operator command room" width="100%" />
 </p>
 
 ## Голосовая связь
@@ -62,11 +60,10 @@
       <img src="dashboard/public/brand/ultron-avatar.png" alt="Оригинальный avatar Eclipse Ultron" width="136" />
     </td>
     <td>
-      <strong>Альтрон остаётся доступен на любой рабочей поверхности.</strong><br/><br/>
-      Постоянная кнопка открывает компактный contact panel. Действие «Спросить голосом»
-      распознаёт одну фразу, явно отправляет её в Chat и озвучивает ответ. Действие
-      «Только продиктовать» оставляет текст в composer для проверки. Микрофон никогда
-      не запускается автоматически.
+      <strong>Альтрон — основной экран, а не дополнение к текстовому чату.</strong><br/><br/>
+      Нажатие «Говорить с Альтроном» распознаёт одну фразу, отправляет её только в
+      закреплённый быстрый Qwen 3 8B и озвучивает ответ. Последняя реплика и ответ видны
+      для проверки. Микрофон никогда не запускается автоматически.
     </td>
   </tr>
 </table>
@@ -78,8 +75,9 @@ explicit click
     └─> trusted Electron IPC (без renderer-параметров)
           └─> whisper.cpp + large-v3-turbo-q5_0
                 └─> transcript in memory
-                      ├─> «Только продиктовать» → Chat composer
-                      └─> «Спросить голосом» → selected Chat model → bounded TTS
+                      └─> fixed Qwen 3 8B → visible answer → bounded TTS
+
+Operator: explicit dictation → editable command → plan → diff → approval → receipt
 ```
 
 - один STT process одновременно;
@@ -103,7 +101,7 @@ flowchart LR
     subgraph Desktop["Desktop control plane"]
       D --> V["Local Voice IPC"]
       D --> R["Safe Operator"]
-      D --> H["AI Chat"]
+      D --> H["Voice Conversation"]
       R --> P["Plan → Diff → Approval"]
       P --> X["One-shot handler"]
       X --> Q["Receipt"]
@@ -117,8 +115,8 @@ flowchart LR
     end
 
     V --> W["Whisper · loopback/local"]
-    H --> O["Primary Ollama · 127.0.0.1:11434"]
-    H --> L["Ultron Lab · 127.0.0.1:11435"]
+    H --> O["Qwen 3 8B · 127.0.0.1:11434"]
+    D -. research inventory .-> L["Ultron Lab · 127.0.0.1:11435"]
     D -. signed opt-in events .-> E["Eclipse Chat Office Core"]
 ```
 
@@ -151,8 +149,9 @@ flowchart LR
 
 | Профиль | Endpoint | Назначение | Default |
 | --- | --- | --- | --- |
-| `qwen3:8b` | `127.0.0.1:11434` | быстрый ежедневный Chat | да |
+| `qwen3:8b` | `127.0.0.1:11434` | живой голосовой диалог | да, закреплён |
 | `huihui_ai/qwen3.8-abliterated:27b` | `127.0.0.1:11435` | изолированный Lab-эксперимент | нет |
+| OrcaRouter Qwen3.8 27B Q4 | `127.0.0.1:11435` | установленный Lab-кандидат; сравнительный benchmark ожидается | нет |
 
 Измерение 27B Q4_K_M на RTX 4060 Ti 16 GiB / 64 GiB RAM, `num_ctx=8192`, `think=false`:
 
@@ -252,7 +251,7 @@ provider tests и Windows Doctor self-test.
 eclipse-hopson-sentinel/
 ├── dashboard/              # Eclipse Ultron · React + Electron + NSIS
 │   ├── electron/           # trusted main/preload и Safe Operator IPC
-│   ├── src/                # Chat, Ultron Core, contact dock, Settings
+│   ├── src/                # Voice Conversation, Operator, Settings
 │   └── public/brand/       # first-party Ultron visual assets
 ├── src/                    # Sentinel TypeScript runtime
 ├── rust/                   # next-generation runtime track
@@ -269,6 +268,7 @@ eclipse-hopson-sentinel/
 | Первый запуск | [Windows quick start](docs/quick-start-windows.md) |
 | Установщик | [Windows installer](docs/windows-installer.md) |
 | Локальный голос и модели | [Ultron Local AI Runtime](docs/ultron-local-ai-runtime.md) |
+| Реестр и evidence моделей | [Ultron model registry](docs/ultron-model-registry.md) |
 | Safe Operator | [Operator contract](docs/sentinel-safe-operator.md) |
 | Voice architecture | [Voice plan](docs/sentinel-voice-plan.md) |
 | Bridge API | [Sentinel Bridge](docs/sentinel-bridge.md) |

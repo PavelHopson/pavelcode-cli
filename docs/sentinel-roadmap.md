@@ -1,19 +1,35 @@
 # Eclipse Hopson Sentinel Roadmap
 
+## Voice-first Ultron — 2026-08-25
+
+- [x] remove the visible text Chat, session sidebar, status rail and floating contact dock from the primary desktop shell
+- [x] make the living Ultron avatar and one explicit `Говорить с Альтроном` action the central product surface
+- [x] pin live conversation to local `qwen3:8b` so stored experimental model choices cannot slow or replace voice replies
+- [x] show the last recognized phrase and spoken answer without exposing a text composer
+- [x] keep Safe Operator as a separate secondary mode with dictation, plan, diff, approval, STOP and receipt
+- [x] preserve explicit one-shot microphone authority; keep wake word and background listening absent
+- [x] verify desktop normal-motion and mobile reduced-motion layouts with zero overflow and browser errors
+- [x] evaluate OrcaRouter and AEON Qwen3.8 27B variants against hardware, provenance and safety boundaries
+- [ ] benchmark the OrcaRouter Q4 candidate in isolated Lab before deciding whether it supersedes HuiHui
+
 ## Living voice assistant — 2026-08-25
 
 - [x] introduce one shared `idle / listening / thinking / speaking / success / error` presence contract
 - [x] animate the avatar, launcher and Ultron Core from real product state instead of decorative timers
-- [x] add an explicit one-turn voice conversation: STT -> selected Chat model -> bounded TTS
-- [x] keep a separate dictation-only route for composer review and editing
+- [x] add an explicit one-turn voice conversation: STT -> fixed fast voice model -> bounded TTS
+- [x] keep a separate dictation-only route for Operator review and editing
 - [x] add visible stop-speaking and global Motion controls; honor live Windows reduced-motion changes
 - [x] limit primary animation loops to compositor-friendly transform and opacity
 - [x] verify desktop normal-motion and compact mobile reduced-motion flows with zero overflow or browser errors
 - [x] fix FIFINE USB microphone capture by pinning the trusted Whisper child to SDL DirectSound
+- [x] split Ultron Core voice UX into an obvious spoken question path and explicit operator dictation
 - [ ] add a local TTS voice inventory and testable voice preview before offering voice selection
 - [ ] evaluate compact always-on-top mode without enabling wake word or background listening
 
-## Persistent Ultron contact and flagship presentation — 2026-08-25
+## Retired persistent contact experiment — 2026-08-25
+
+This implementation was completed and tested, then intentionally superseded by the simpler
+voice-first shell above. The dock and visible Chat are no longer primary product surfaces.
 
 - [x] add an original first-party Ultron avatar without protected franchise artwork
 - [x] keep one persistent contact dock visible across Chat and Ultron Core
@@ -22,7 +38,7 @@
 - [x] cover desktop, compact mobile, focus and reduced-motion states
 - [x] rebuild the repository README around verified capabilities, real measurements and current safety boundaries
 - [x] add first-party hero, avatar and current product screenshot assets
-- [ ] evaluate an optional always-on-top compact window; keep background listening disabled by default
+- [ ] evaluate an optional always-on-top voice orb; keep background listening disabled by default
 
 ## Desktop first-run guidance — 2026-08-24
 
