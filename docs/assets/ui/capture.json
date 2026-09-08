@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "project": "eclipse-hopson-sentinel",
+  "capturedAt": "2026-09-08T09:52:22.121Z",
+  "caption": "Голосовой экран Альтрона в ожидании команды. Микрофон и локальные модели не запускались.",
+  "method": "isolated-local-source-preview",
+  "context": "Local source preview, clean browser storage, reduced motion, no .env, external resources and backend APIs blocked. Repository content only, no additional fixtures or personal history; no production verification.",
+  "sourceHead": "1268cf9d9a1dc1c0cd35f5dcb14d76fceb8a5a05",
+  "sourceWorktreeDirty": true,
+  "entryFiles": [
+    {
+      "file": "dashboard/index.html",
+      "sha256": "41c2db0c081fe220641381d9591e6fade511764c1bd0b35288ef3e6d4442d074"
+    },
+    {
+      "file": "dashboard/package.json",
+      "sha256": "fb1d7e79a7d43186419e96c3c65936bf2deb9af1e48e4eeccd73e0f3e327c124"
+    },
+    {
+      "file": "dashboard/src/main.tsx",
+      "sha256": "fda5c719021f3961a718673535b22b83eee118913616dfad8b60294c1f6b33e2"
+    }
+  ],
+  "screenshots": [
+    {
+      "kind": "overview",
+      "file": "overview.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "ada21c4bb6de91e3bc90dccab4a94d6facac1696514a1c400167befeb14e2d85",
+      "bytes": 233908
+    },
+    {
+      "kind": "mobile",
+      "file": "mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "256d3dfb2f33ad583f28f192f7ceba20e2333e66ccce285c92e6333f4cf2aba3",
+      "bytes": 116164
+    }
+  ],
+  "review": "Desktop and selected mobile captures visually reviewed before documentation use."
+}

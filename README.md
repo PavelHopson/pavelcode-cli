@@ -22,6 +22,63 @@
 
 ---
 
+<!-- repository-guide:start -->
+[Интерфейс](#readme-interface) · [Первый запуск](#readme-start) · [Что внутри](#readme-map) · [Путеводитель](docs/repository-guide.md#start) · [Карта кода](docs/repository-guide.md#map) · [Проверки](docs/repository-guide.md#checks) · [Границы и права](docs/repository-guide.md#boundaries)
+
+<a id="readme-interface"></a>
+
+## Интерфейс
+
+![Eclipse Ultron — Голосовой экран Альтрона в ожидании команды. Микрофон и локальные модели не запускались.](docs/assets/ui/overview.png)
+
+**Голосовой экран Альтрона в ожидании команды. Микрофон и локальные модели не запускались.**
+
+Локальный снимок от 8 сентября 2026: отдельный профиль браузера, без внешних API и пользовательских секретов. Это вид интерфейса, не подтверждение production-функций.
+
+<details>
+<summary><strong>Мобильный экран · 390 px</strong></summary>
+
+<img src="docs/assets/ui/mobile.png" alt="Eclipse Ultron — мобильный экран" width="390">
+
+</details>
+
+[Открыть в полном размере](docs/assets/ui/overview.png) · [Данные снимка](docs/assets/ui/capture.json)
+
+<a id="readme-map"></a>
+
+## Проект за минуту
+
+- **[Интерфейс Альтрона](<dashboard/src>)** — Голосовое рабочее пространство и настройки помощника.
+- **[Desktop runtime](<dashboard/electron>)** — Связь интерфейса с локальными возможностями Windows.
+- **[Голосовой конвейер](<docs/ultron-local-ai-runtime.md>)** — Управление локальными компонентами голосовой сессии.
+
+<a id="readme-start"></a>
+
+## Начать локально
+
+**Среда:** Node.js и npm. **Источник:** [dashboard/package.json](<dashboard/package.json>).
+
+Из корня клонированного репозитория:
+
+```bash
+cd dashboard
+npm ci
+npm run dev
+```
+
+Запускается веб-интерфейс dashboard. Electron, голосовые модели и Sentinel Core на Bun настраиваются отдельно; эта команда не запускает всю голосовую систему.
+
+<details>
+<summary><strong>Перед первым запуском и изменением кода</strong></summary>
+
+- Команды сверены с исходниками 8 сентября 2026. Это инструкция, а не отметка об успешном запуске или текущем production.
+- Установка зависимостей может обращаться в registry и выполнять lifecycle scripts. Используйте отдельную рабочую среду и демонстрационные данные.
+- Микрофон, управление компьютером и системные действия включаются только по явному разрешению; новые права не выводятся из голосового запроса.
+- [SECURITY.md](<SECURITY.md>)
+
+</details>
+<!-- repository-guide:end -->
+
 ## Зачем существует Ultron
 
 Большинство AI-интерфейсов скрывает слишком много: где обрабатываются данные, что именно
